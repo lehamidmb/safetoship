@@ -1,0 +1,21 @@
+name: ShipVerdict
+description: Run a pre-launch security and compliance gate for AI-generated apps.
+inputs:
+  target:
+    description: Directory to scan.
+    required: false
+    default: "."
+  fail-on:
+    description: Use "do-not-ship" or "warnings".
+    required: false
+    default: "do-not-ship"
+runs:
+  using: composite
+  steps:
+    - name: Run ShipVerdict
+      shell: bash
+      run: |
+        npx shipverdict audit "${{ inputs.target }}" \
+          --sarif shipverdict.sarif \
+          --markdown shipverdict-report.md \
+          --fail-on "${{ inputs.fail-on }}"

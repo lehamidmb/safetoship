@@ -1,0 +1,32 @@
+name: ShipVerdict
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run build
+      - run: node dist/src/cli.js audit . --sarif shipverdict.sarif --markdown shipverdict-report.md --fail-on do-not-ship
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: shipverdict.sarif
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shipverdict-report
+          path: shipverdict-report.md
