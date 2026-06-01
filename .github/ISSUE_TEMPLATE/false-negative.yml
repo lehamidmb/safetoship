@@ -1,0 +1,32 @@
+name: False negative
+description: Report a launch risk SafeToShip missed.
+title: "[False negative]: "
+labels: ["false-negative"]
+body:
+  - type: textarea
+    id: risk
+    attributes:
+      label: Missed risk
+      description: Describe what SafeToShip missed. Do not include real secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: Provide a small code sample or fixture if safe to share.
+    validations:
+      required: false
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Frontend secret exposure
+        - Supabase/RLS
+        - Abuse/cost
+        - Security headers/source maps
+        - Privacy/terms/compliance
+        - Other
+    validations:
+      required: true

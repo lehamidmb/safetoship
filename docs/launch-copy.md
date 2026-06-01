@@ -28,7 +28,7 @@ Run one command and get:
 - SHIP-WITH-WARNINGS
 - DO-NOT-SHIP
 
-It checks exposed API keys, Supabase RLS gaps, `service_role` leaks, browser-only usage limits, unthrottled paid AI routes, missing privacy policies, missing Terms of Use, and undeclared third-party providers.
+It checks exposed API keys, Supabase RLS gaps, `service_role` leaks, browser-only usage limits, unthrottled paid AI routes, missing privacy policies, missing Terms of Use, missing security contacts, and undeclared third-party providers.
 
 The best part: it turns findings into a hardening plan with safe autofixes where possible and paste-ready repair tasks for Claude Code, Codex, or Cursor.
 

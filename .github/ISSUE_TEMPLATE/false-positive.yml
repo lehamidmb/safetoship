@@ -1,0 +1,26 @@
+name: False positive
+description: Report a finding that SafeToShip should not flag.
+title: "[False positive]: "
+labels: ["false-positive"]
+body:
+  - type: textarea
+    id: finding
+    attributes:
+      label: Finding
+      description: Paste the SafeToShip finding, removing secrets or private data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Why this is safe
+      description: Explain why the app should not be flagged.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: SafeToShip version
+      placeholder: "0.1.0"
+    validations:
+      required: false

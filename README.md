@@ -126,6 +126,7 @@ SafeToShip 0.1.0  /app
 - Privacy policy under-declaring third-party providers used in code.
 - Analytics loaded before an obvious consent gate.
 - Product-name trademark/IP attestation reminder.
+- Missing security contact or disclosure policy for user-data apps.
 
 Legal/compliance checks are not legal advice, do not create an attorney-client relationship, and should be reviewed by a qualified professional.
 
@@ -142,6 +143,7 @@ Safe autofixes in v0.1:
 - disable simple `productionBrowserSourceMaps: true` Next.js configs.
 - create a review-required `PRIVACY.md` starter when data collection is detected.
 - create a review-required `TERMS.md` starter when accounts, payments, or user content are detected.
+- create a starter `SECURITY.md` disclosure policy when user-data apps have no private reporting path.
 
 SafeToShip intentionally does not blindly move API keys, rewrite RLS policies, or change billing/auth flows. For those, it gives an exact repair prompt with the file path, risk, and acceptance criteria.
 

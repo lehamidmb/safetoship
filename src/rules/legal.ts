@@ -26,7 +26,8 @@ export function runLegalRules(files: ProjectFile[]): Finding[] {
     ...findMissingTerms(files),
     ...findPolicyUnderDeclaration(files),
     ...findPreConsentTracking(files),
-    ...findTrademarkAttestation(files)
+    ...findTrademarkAttestation(files),
+    ...findMissingSecurityContact(files)
   ];
 }
 
@@ -174,6 +175,38 @@ export function findTrademarkAttestation(files: ProjectFile[]): Finding[] {
       fixPrompt: fixPrompt(
         `The product appears to be named "${productName.name}".`,
         "Do a USPTO/TESS search, a general web search, and a domain/social handle search for confusingly similar names in the same category. Record the result in a launch checklist and ask a lawyer if there is any close match."
+      )
+    }
+  ];
+}
+
+export function findMissingSecurityContact(files: ProjectFile[]): Finding[] {
+  const collecting = findDataCollectionSignal(files);
+  if (!collecting) {
+    return [];
+  }
+
+  const hasSecurityPolicy = files.some((file) =>
+    /(^|\/)(SECURITY\.md|security\.txt)$/i.test(file.relativePath) ||
+    /security contact|report a vulnerability|responsible disclosure|security@/i.test(file.content)
+  );
+
+  if (hasSecurityPolicy) {
+    return [];
+  }
+
+  return [
+    {
+      id: "STS-LEGAL-006",
+      title: "No security contact or disclosure policy was found",
+      severity: "MEDIUM",
+      family: "legal-compliance",
+      file: collecting.file.relativePath,
+      line: collecting.line,
+      why: "The app appears to collect user data, but there is no obvious way for someone to report a vulnerability privately. A security contact is basic launch hygiene for user-facing apps.",
+      fixPrompt: fixPrompt(
+        "This app appears to collect user data but has no security contact or disclosure policy.",
+        "Add a SECURITY.md or security.txt with a private vulnerability reporting path, expected response timeline, and a request not to include exploit details in public issues."
       )
     }
   ];

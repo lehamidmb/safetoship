@@ -102,6 +102,14 @@ function actionFromFinding(finding: Finding): HardeningAction {
         status: "planned",
         details: "SafeToShip can create TERMS.md with review-required starter terms covering accounts, payments, acceptable use, disclaimers, and liability."
       };
+    case "STS-LEGAL-006":
+      return {
+        id: finding.id,
+        title: "Create a starter security disclosure policy",
+        kind: "safe-autofix",
+        status: "planned",
+        details: "SafeToShip can create SECURITY.md with a private vulnerability reporting path and disclosure expectations."
+      };
     case "STS-COST-001":
     case "STS-COST-002":
     case "STS-COST-003":
@@ -163,15 +171,32 @@ async function applyAction(targetDir: string, action: HardeningAction): Promise<
   }
 
   if (action.id === "STS-LEGAL-001") {
-    return writeIfMissing(targetDir, "PRIVACY.md", privacyTemplate());
+    return applyWriteIfMissing(targetDir, action, "PRIVACY.md", privacyTemplate());
   }
 
   if (action.id === "STS-LEGAL-002") {
-    return writeIfMissing(targetDir, "TERMS.md", termsTemplate());
+    return applyWriteIfMissing(targetDir, action, "TERMS.md", termsTemplate());
+  }
+
+  if (action.id === "STS-LEGAL-006") {
+    return applyWriteIfMissing(targetDir, action, "SECURITY.md", securityTemplate());
   }
 
   action.status = "skipped";
   return undefined;
+}
+
+async function applyWriteIfMissing(
+  targetDir: string,
+  action: HardeningAction,
+  relativePath: string,
+  content: string
+): Promise<string | undefined> {
+  const changed = await writeIfMissing(targetDir, relativePath, content);
+  if (!changed) {
+    action.status = "skipped";
+  }
+  return changed;
 }
 
 async function writeIfMissing(targetDir: string, relativePath: string, content: string): Promise<string | undefined> {
@@ -292,6 +317,34 @@ Specify governing law after legal review.
 ## Contact
 
 Provide a working support contact before launch.
+`;
+}
+
+function securityTemplate(): string {
+  return `# Security Policy
+
+Review this policy before launch and replace placeholders with a working private reporting path.
+
+## Reporting A Vulnerability
+
+Please do not open a public issue with exploit details.
+
+Report security concerns privately at: [security contact email or form]
+
+Include:
+
+- affected URL or feature
+- clear reproduction steps
+- impact
+- whether any user data may be exposed
+
+## Response Expectations
+
+Describe expected acknowledgement and remediation timelines before launch.
+
+## Scope
+
+Describe which app surfaces, APIs, and domains are in scope.
 `;
 }
 

@@ -77,6 +77,7 @@ describe("SafeToShip heuristics", () => {
       expect(ids(result)).toContain("STS-LEGAL-001");
       expect(ids(result)).toContain("STS-LEGAL-002");
       expect(ids(result)).toContain("STS-LEGAL-005");
+      expect(ids(result)).toContain("STS-LEGAL-006");
     });
   });
 
@@ -126,6 +127,7 @@ describe("SafeToShip heuristics", () => {
       expect(nextConfig).toContain("productionBrowserSourceMaps: false");
       expect(hardening.changedFiles).toContain("PRIVACY.md");
       expect(hardening.changedFiles).toContain("SAFETOSHIP_HARDENING_PLAN.md");
+      expect(hardening.changedFiles).toContain("SECURITY.md");
       expect(plan).toContain("SafeToShip Hardening Plan");
     });
   });

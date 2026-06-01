@@ -9,6 +9,7 @@
   "files": [
     "dist",
     "README.md",
+    "SECURITY.md",
     "LICENSE",
     "action.yml"
   ],

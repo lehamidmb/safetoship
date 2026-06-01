@@ -2,6 +2,7 @@ node_modules/
 dist/
 coverage/
 tmp/
+SAFETOSHIP_HARDENING_PLAN.md
 .DS_Store
 .env
 .env.*
