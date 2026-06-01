@@ -20,6 +20,14 @@ Do not claim adoption we do not have yet. Lead with ecosystem importance:
 - SafeToShip speaks to the builder at launch time.
 - The project is local-first, API-key-free, Apache-2.0, and directly improves the safety of apps built with AI coding tools.
 
+## Form Values
+
+- GitHub username: `lehamidmb`
+- GitHub repository URL: `https://github.com/lehamidmb/safetoship`
+- Role: Primary maintainer
+- Interested in: Codex Security; API credits for my project
+- Need from Hamid: first name, last name, ChatGPT account email, OpenAI Organization ID
+
 ## Field Draft: Why Does This Repository Qualify?
 
 SafeToShip is an Apache-2.0, local-first launch hardening agent for AI-built apps. It wraps Gitleaks, Semgrep, and OSV where useful, then adds OSS heuristics for gaps vibe coders hit: Supabase service_role/RLS mistakes, client-side cost-limit bypasses, unthrottled paid API routes, and missing privacy/terms/provider disclosures. It returns a go/no-go verdict, safe autofixes, and Codex/Claude/Cursor repair prompts so non-experts can harden apps before launch.
