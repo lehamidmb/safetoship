@@ -193,7 +193,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OWNER/safetoship@v0.1.0
+      - uses: lehamidmb/safetoship@v0.1.0
         with:
           target: "."
           fail-on: do-not-ship
