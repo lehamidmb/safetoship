@@ -31,7 +31,7 @@ export function findFrontendSecrets(files: ProjectFile[]): Finding[] {
     const publicEnvMatches = [...file.content.matchAll(SECRETISH_PUBLIC_ENV)];
     for (const match of publicEnvMatches) {
       findings.push({
-        id: "SV-COST-001",
+        id: "STS-COST-001",
         title: "Secret-shaped value is exposed through NEXT_PUBLIC_",
         severity: "BLOCKER",
         family: "abuse-cost",
@@ -49,7 +49,7 @@ export function findFrontendSecrets(files: ProjectFile[]): Finding[] {
     if (clientFile && DIRECT_SECRET_VALUE.test(file.content)) {
       const match = DIRECT_SECRET_VALUE.exec(file.content);
       findings.push({
-        id: "SV-COST-002",
+        id: "STS-COST-002",
         title: "Secret-shaped value is reachable from frontend code",
         severity: "BLOCKER",
         family: "abuse-cost",
@@ -80,7 +80,7 @@ export function findSupabaseServiceRoleInClient(files: ProjectFile[]): Finding[]
     }
 
     findings.push({
-      id: "SV-COST-003",
+      id: "STS-COST-003",
       title: "Supabase service_role appears reachable from the client",
       severity: "BLOCKER",
       family: "abuse-cost",
@@ -113,7 +113,7 @@ export function findSupabaseRlsProblems(files: ProjectFile[]): Finding[] {
 
       if (!enablePattern.test(allSql)) {
         findings.push({
-          id: "SV-COST-004",
+          id: "STS-COST-004",
           title: "Supabase public table is created without enabling RLS",
           severity: "BLOCKER",
           family: "abuse-cost",
@@ -132,7 +132,7 @@ export function findSupabaseRlsProblems(files: ProjectFile[]): Finding[] {
       /create\s+policy[\s\S]{0,1200}?using\s*\(\s*(true|auth\.role\s*\(\s*\)\s*=\s*['"]authenticated['"])\s*\)/gi;
     for (const match of file.content.matchAll(broadPolicyPattern)) {
       findings.push({
-        id: "SV-COST-005",
+        id: "STS-COST-005",
         title: "Supabase policy looks too broad",
         severity: "BLOCKER",
         family: "abuse-cost",
@@ -166,7 +166,7 @@ export function findClientSideOnlyUsageLimits(files: ProjectFile[]): Finding[] {
 
     const match = /(localStorage|sessionStorage|indexedDB|document\.cookie)/i.exec(file.content);
     findings.push({
-      id: "SV-COST-006",
+      id: "STS-COST-006",
       title: "Paid usage limit appears enforced only in the browser",
       severity: "BLOCKER",
       family: "abuse-cost",
@@ -193,13 +193,13 @@ export function findPaidEndpointsWithoutRateLimits(files: ProjectFile[]): Findin
 
     const match = PAID_API_SIGNAL.exec(file.content);
     findings.push({
-      id: "SV-COST-007",
+      id: "STS-COST-007",
       title: "Paid provider endpoint has no obvious server-side rate limit",
       severity: "HIGH",
       family: "abuse-cost",
       file: file.relativePath,
       line: lineForIndex(file.content, match?.index ?? 0),
-      why: "This server endpoint appears to call a paid provider, but ShipVerdict could not find a server-side rate limit. That leaves you exposed to abuse and surprise bills.",
+      why: "This server endpoint appears to call a paid provider, but SafeToShip could not find a server-side rate limit. That leaves you exposed to abuse and surprise bills.",
       fixPrompt: fixPrompt(
         "A server endpoint calls a paid provider without an obvious rate limit.",
         "Add server-side rate limiting before the paid API call using Upstash Ratelimit, express-rate-limit, your API gateway, or a durable database counter. Return 429 when the limit is exceeded."

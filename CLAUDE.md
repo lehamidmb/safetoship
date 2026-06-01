@@ -1,6 +1,6 @@
 # Claude Instructions
 
-When contributing to ShipVerdict, optimize for trustworthy launch decisions:
+When contributing to SafeToShip, optimize for trustworthy launch hardening:
 
 - Findings should be actionable, beginner-readable, and grounded in a path and line number whenever possible.
 - False positives are acceptable only when the fix prompt is still useful and the wording clearly says "appears" or "may".

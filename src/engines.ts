@@ -53,7 +53,7 @@ function runGitleaks(targetDir: string): { findings: Finding[]; status: EngineSt
   }
 
   const findings = parseJsonArray(result.stdout).map((item: Record<string, unknown>) => ({
-    id: "SV-ENG-GITLEAKS",
+    id: "STS-ENG-GITLEAKS",
     title: "Gitleaks detected a committed secret",
     severity: "BLOCKER" as const,
     family: "engine" as const,
@@ -109,7 +109,7 @@ function runSemgrep(targetDir: string): { findings: Finding[]; status: EngineSta
     const severity = String(extra.severity ?? "WARNING").toUpperCase();
 
     return {
-      id: "SV-ENG-SEMGREP",
+      id: "STS-ENG-SEMGREP",
       title: String(extra.message ?? "Semgrep found a code security issue"),
       severity: severity === "ERROR" ? ("HIGH" as const) : ("MEDIUM" as const),
       family: "engine" as const,
@@ -169,13 +169,13 @@ function runOsvScanner(targetDir: string): { findings: Finding[]; status: Engine
       for (const vulnerability of vulnerabilities as Array<Record<string, unknown>>) {
         const severity = mapOsvSeverity(vulnerability);
         findings.push({
-          id: "SV-ENG-OSV",
+          id: "STS-ENG-OSV",
           title: `Known vulnerable dependency: ${String(vulnerability.id ?? "OSV finding")}`,
           severity,
           family: "engine",
           file: toRelative(targetDir, String((source.source as Record<string, unknown> | undefined)?.path ?? "")),
-          why: `OSV-Scanner reported ${String(vulnerability.id ?? "a known vulnerability")} in a dependency. Known vulnerable dependencies can be exploited even if your own code looks clean.`,
-          fixPrompt: fixPrompt(
+      why: `OSV-Scanner reported ${String(vulnerability.id ?? "a known vulnerability")} in a dependency. Known vulnerable dependencies can be exploited even if your own code looks clean.`,
+      fixPrompt: fixPrompt(
             "OSV-Scanner reported a known vulnerable dependency.",
             "Upgrade the vulnerable package to a fixed version, run the test suite, and document any temporary exception with the CVE/OSV ID and removal date."
           ),

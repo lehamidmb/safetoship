@@ -1,4 +1,4 @@
-name: ShipVerdict
+name: SafeToShip
 
 on:
   pull_request:
@@ -20,13 +20,13 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run build
-      - run: node dist/src/cli.js audit . --sarif shipverdict.sarif --markdown shipverdict-report.md --fail-on do-not-ship
+      - run: node dist/cli.js audit . --sarif safetoship.sarif --markdown safetoship-report.md --fail-on do-not-ship
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: shipverdict.sarif
+          sarif_file: safetoship.sarif
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: shipverdict-report
-          path: shipverdict-report.md
+          name: safetoship-report
+          path: safetoship-report.md

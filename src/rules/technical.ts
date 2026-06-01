@@ -19,7 +19,7 @@ function findProductionSourceMaps(files: ProjectFile[]): Finding[] {
     }
 
     findings.push({
-      id: "SV-TECH-001",
+      id: "STS-TECH-001",
       title: "Production browser source maps are enabled",
       severity: "HIGH",
       family: "technical",
@@ -64,13 +64,13 @@ function findMissingNextSecurityHeaders(files: ProjectFile[]): Finding[] {
 
   return [
     {
-      id: "SV-TECH-002",
+      id: "STS-TECH-002",
       title: "Next.js security headers are missing or incomplete",
       severity: "MEDIUM",
       family: "technical",
       file: nextConfig?.relativePath ?? packageFile?.relativePath,
       line: 1,
-      why: "This looks like a Next.js app, but ShipVerdict could not find a solid security headers setup. Missing CSP, HSTS, X-Content-Type-Options, or frame protections makes common browser attacks easier.",
+      why: "This looks like a Next.js app, but SafeToShip could not find a solid security headers setup. Missing CSP, HSTS, X-Content-Type-Options, or frame protections makes common browser attacks easier.",
       fixPrompt: fixPrompt(
         "This Next.js app appears to be missing core security headers.",
         "Add a headers() config or middleware that sets Content-Security-Policy, Strict-Transport-Security, X-Content-Type-Options, Referrer-Policy, and X-Frame-Options. Keep the policy compatible with the current app."

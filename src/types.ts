@@ -23,7 +23,7 @@ export interface EngineStatus {
 }
 
 export interface ScanResult {
-  tool: "shipverdict";
+  tool: "safetoship";
   version: string;
   generatedAt: string;
   targetDir: string;

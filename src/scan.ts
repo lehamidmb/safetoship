@@ -35,7 +35,7 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
   const sortedFindings = sortFindings(findings);
 
   return {
-    tool: "shipverdict",
+    tool: "safetoship",
     version: VERSION,
     generatedAt: new Date().toISOString(),
     targetDir,

@@ -1,6 +1,6 @@
 # Agent Instructions
 
-ShipVerdict is a local-first OSS launch gate for AI-generated apps. Keep the product honest: prefer exact file/line evidence, plain-English risk explanations, and fix prompts a non-expert can paste into Claude Code, Codex, or Cursor.
+SafeToShip is a local-first OSS launch hardening agent for AI-generated apps. Keep the product honest: prefer exact file/line evidence, plain-English risk explanations, safe autofixes where deterministic, and repair prompts a non-expert can paste into Claude Code, Codex, or Cursor.
 
 Rules:
 

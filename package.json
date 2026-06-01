@@ -1,10 +1,10 @@
 {
-  "name": "shipverdict",
+  "name": "safetoship",
   "version": "0.1.0",
-  "description": "Vibe code with peace of mind: a local pre-launch gate for exposed keys, Supabase gaps, cost abuse, and launch compliance.",
+  "description": "Vibe code with peace of mind: a local launch hardening agent for exposed keys, Supabase gaps, cost abuse, and launch compliance.",
   "type": "module",
   "bin": {
-    "shipverdict": "dist/cli.js"
+    "safetoship": "dist/cli.js"
   },
   "files": [
     "dist",

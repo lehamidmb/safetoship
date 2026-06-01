@@ -4,7 +4,7 @@ import type { Finding, ScanResult, Severity, Verdict } from "../types.js";
 
 export function renderTerminal(result: ScanResult): string {
   const lines: string[] = [];
-  lines.push(`${pc.bold("ShipVerdict")} ${pc.dim(result.version)}  ${pc.dim(result.targetDir)}`);
+  lines.push(`${pc.bold("SafeToShip")} ${pc.dim(result.version)}  ${pc.dim(result.targetDir)}`);
   lines.push(`${renderVerdict(result.verdict)}  ${summaryText(result)}`);
   lines.push("");
   lines.push(pc.yellow(`Legal/compliance banner: ${LEGAL_BANNER}`));

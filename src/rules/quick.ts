@@ -27,7 +27,7 @@ export function findSecretsOutsideEnv(files: ProjectFile[]): Finding[] {
     }
 
     findings.push({
-      id: "SV-QUICK-001",
+      id: "STS-QUICK-001",
       title: "Secret-shaped value appears outside an env file",
       severity: "BLOCKER",
       family: "quick",
@@ -62,7 +62,7 @@ export function findClientOnlyAuthGuards(files: ProjectFile[]): Finding[] {
 
     const match = /(router\.push|redirect|window\.location)/i.exec(file.content);
     findings.push({
-      id: "SV-QUICK-002",
+      id: "STS-QUICK-002",
       title: "Sensitive page appears protected only by client-side redirect",
       severity: "HIGH",
       family: "quick",
@@ -95,7 +95,7 @@ export function findUnsafeDbQueryInterpolation(files: ProjectFile[]): Finding[] 
     }
 
     findings.push({
-      id: "SV-QUICK-003",
+      id: "STS-QUICK-003",
       title: "Database query appears to interpolate user-controlled input",
       severity: "BLOCKER",
       family: "quick",

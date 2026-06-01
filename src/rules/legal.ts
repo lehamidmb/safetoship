@@ -45,13 +45,13 @@ export function findMissingPrivacyPolicy(files: ProjectFile[]): Finding[] {
 
   return [
     {
-      id: "SV-LEGAL-001",
+      id: "STS-LEGAL-001",
       title: "Data collection signals exist, but no usable privacy policy was found",
       severity: "BLOCKER",
       family: "legal-compliance",
       file: collecting.file.relativePath,
       line: collecting.line,
-      why: "The app appears to collect user data through email, auth, cookies, analytics, or payments, but ShipVerdict could not find a real privacy policy. Placeholder policies count as missing.",
+      why: "The app appears to collect user data through email, auth, cookies, analytics, or payments, but SafeToShip could not find a real privacy policy. Placeholder policies count as missing.",
       fixPrompt: fixPrompt(
         "This app appears to collect user data but does not have a usable privacy policy.",
         "Create a plain-language privacy policy route and/or PRIVACY.md that names what data is collected, why, where it is processed, third-party providers, retention, user rights, and a contact email. Add a visible link in the app."
@@ -76,7 +76,7 @@ export function findMissingTerms(files: ProjectFile[]): Finding[] {
   const payments = /stripe|checkout|payment|subscription|billing/i.test(signal.file.content);
   return [
     {
-      id: "SV-LEGAL-002",
+      id: "STS-LEGAL-002",
       title: "Terms of Use are missing for an account, payment, or user-content app",
       severity: payments ? "BLOCKER" : "HIGH",
       family: "legal-compliance",
@@ -112,7 +112,7 @@ export function findPolicyUnderDeclaration(files: ProjectFile[]): Finding[] {
 
   return [
     {
-      id: "SV-LEGAL-003",
+      id: "STS-LEGAL-003",
       title: "Privacy policy may under-declare third-party data sharing",
       severity: "BLOCKER",
       family: "legal-compliance",
@@ -137,7 +137,7 @@ export function findPreConsentTracking(files: ProjectFile[]): Finding[] {
     if (vendor && !consentSignal) {
       return [
         {
-          id: "SV-LEGAL-004",
+          id: "STS-LEGAL-004",
           title: "Analytics appears loaded before consent",
           severity: "BLOCKER",
           family: "legal-compliance",
@@ -164,13 +164,13 @@ export function findTrademarkAttestation(files: ProjectFile[]): Finding[] {
 
   return [
     {
-      id: "SV-LEGAL-005",
+      id: "STS-LEGAL-005",
       title: "Product name needs trademark/IP attestation",
       severity: "HIGH",
       family: "legal-compliance",
       file: productName.file.relativePath,
       line: productName.line,
-      why: `ShipVerdict found the product name "${productName.name}". A static scanner cannot know whether the name creates trademark or IP risk, so this needs a human attestation before launch.`,
+      why: `SafeToShip found the product name "${productName.name}". A static scanner cannot know whether the name creates trademark or IP risk, so this needs a human attestation before launch.`,
       fixPrompt: fixPrompt(
         `The product appears to be named "${productName.name}".`,
         "Do a USPTO/TESS search, a general web search, and a domain/social handle search for confusingly similar names in the same category. Record the result in a launch checklist and ask a lawyer if there is any close match."

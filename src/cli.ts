@@ -3,6 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
 import { scan, VERSION } from "./scan.js";
+import { createHardeningPlan, renderHardeningResult } from "./hardening.js";
 import { renderMarkdown } from "./reporters/markdown.js";
 import { renderSarif } from "./reporters/sarif.js";
 import { renderTerminal } from "./reporters/terminal.js";
@@ -20,8 +21,8 @@ interface CliOptions {
 const program = new Command();
 
 program
-  .name("shipverdict")
-  .description("Pre-launch security and compliance gate for AI-generated apps.")
+  .name("safetoship")
+  .description("Launch hardening agent for AI-generated apps.")
   .version(VERSION);
 
 program
@@ -42,6 +43,31 @@ program
     });
     await writeOutputs(result, options);
     exitForVerdict(result.verdict, options.failOn);
+  });
+
+program
+  .command("fix")
+  .argument("[target]", "repo or app directory to harden", ".")
+  .description("Generate an agent-ready launch hardening plan, with optional safe autofixes.")
+  .option("--apply-safe", "apply deterministic safe fixes and write the hardening plan")
+  .option("--json", "print JSON instead of terminal output")
+  .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
+  .action(async (target: string, options: CliOptions & { applySafe?: boolean }) => {
+    const result = await scan({
+      targetDir: target,
+      mode: "audit",
+      runEngines: options.engines !== false,
+      excludes: options.exclude ?? []
+    });
+    const hardening = await createHardeningPlan(result, Boolean(options.applySafe));
+
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify({ scan: result, hardening }, null, 2)}\n`);
+      return;
+    }
+
+    process.stdout.write(renderHardeningResult(hardening));
   });
 
 program

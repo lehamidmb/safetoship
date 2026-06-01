@@ -11,8 +11,8 @@ export function renderSarif(result: ScanResult): string {
         {
           tool: {
             driver: {
-              name: "ShipVerdict",
-              informationUri: "https://github.com/OWNER/shipverdict",
+              name: "SafeToShip",
+              informationUri: "https://github.com/OWNER/safetoship",
               version: result.version,
               rules: [...rules.values()].map(ruleFromFinding)
             }

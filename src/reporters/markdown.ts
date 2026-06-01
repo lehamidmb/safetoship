@@ -3,7 +3,7 @@ import type { ScanResult } from "../types.js";
 
 export function renderMarkdown(result: ScanResult): string {
   const lines: string[] = [];
-  lines.push(`# ShipVerdict Report`);
+  lines.push(`# SafeToShip Report`);
   lines.push("");
   lines.push(`**Verdict:** ${result.verdict}`);
   lines.push(`**Target:** \`${result.targetDir}\``);

@@ -8,7 +8,7 @@ Thanks for helping make AI-built apps safer to launch.
 npm install
 npm run build
 npm test
-node dist/src/cli.js audit fixtures/insecure-next-supabase --no-engines
+node dist/cli.js audit fixtures/insecure-next-supabase --no-engines
 ```
 
 ## Rule Guidelines

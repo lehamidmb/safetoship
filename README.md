@@ -1,8 +1,8 @@
-# ShipVerdict
+# SafeToShip
 
 Vibe code with peace of mind.
 
-ShipVerdict is a local pre-launch gate for AI-built apps. Run it before you publish and it tells you, in plain English, whether your app is ready to ship:
+SafeToShip is a local pre-launch gate for AI-built apps. Run it before you publish and it tells you, in plain English, whether your app is ready to ship:
 
 - `SHIP`
 - `SHIP-WITH-WARNINGS`
@@ -10,7 +10,7 @@ ShipVerdict is a local pre-launch gate for AI-built apps. Run it before you publ
 
 It looks for the mistakes AI coding tools and first-time builders often miss: private API keys in the frontend, Supabase RLS gaps, `service_role` exposure, browser-only usage limits, paid API routes with no rate limit, missing privacy policies, missing Terms of Use, and other launch risks.
 
-ShipVerdict is not another wall of scanner output. It gives you a decision, explains the risk like a human, and hands you a copy-paste fix prompt for Claude Code, Codex, or Cursor.
+SafeToShip is not another wall of scanner output. It gives you a decision, explains the risk like a human, and turns the findings into a launch hardening plan for Claude Code, Codex, Cursor, or a human maintainer.
 
 ## Why This Exists
 
@@ -26,18 +26,30 @@ A vibe-coded app can look finished while quietly shipping with:
 - analytics, email capture, auth, or payments with no privacy policy
 - accounts, uploads, payments, or user content with no Terms of Use
 
-ShipVerdict is the friend who stops you at the door and says: "This works, but do not launch it yet. Here is exactly what to fix."
+SafeToShip is the friend who stops you at the door and says: "This works, but do not launch it yet. Here is exactly what to fix."
 
 ## Quick Start
 
 ```bash
-npx shipverdict audit
+npx safetoship audit
 ```
 
 For a fast beginner check:
 
 ```bash
-npx shipverdict quick
+npx safetoship quick
+```
+
+To generate a repair plan:
+
+```bash
+npx safetoship fix
+```
+
+To apply deterministic safe fixes and write the remaining repair plan:
+
+```bash
+npx safetoship fix --apply-safe
 ```
 
 Until the package is published, run locally:
@@ -52,24 +64,25 @@ node dist/cli.js audit fixtures/insecure-next-supabase --no-engines
 
 Most security tools assume you already know what a CVE, SARIF report, CSP header, or RLS policy means.
 
-ShipVerdict assumes you are trying to launch an app and need a clear answer.
+SafeToShip assumes you are trying to launch an app and need a clear answer.
 
 - Verdict first: `SHIP`, `SHIP-WITH-WARNINGS`, or `DO-NOT-SHIP`.
 - Built for the AI-builder stack: Next.js, Supabase, Node, serverless, paid AI APIs.
 - Catches cost-abuse patterns ordinary scanners miss, like client-side quota limits.
 - Includes launch compliance basics: privacy policy, Terms of Use, provider disclosure, consent signals, and trademark attestation.
-- Gives copy-paste fix prompts for Claude Code, Codex, and Cursor.
+- Turns findings into copy-paste repair tasks for Claude Code, Codex, and Cursor.
+- Applies safe hardening fixes for deterministic issues like source maps and missing policy starter docs.
 - Runs locally by default. No API key required.
 
-The goal is simple: keep the speed of vibe coding, but add a real launch checkpoint before users, attackers, app stores, lawyers, or cloud bills get involved.
+The goal is simple: keep the speed of vibe coding, but add a real launch hardening pass before users, attackers, app stores, lawyers, or cloud bills get involved.
 
 ## Example Output
 
 ```text
-ShipVerdict 0.1.0  /app
+SafeToShip 0.1.0  /app
  DO-NOT-SHIP   7 finding(s): 4 blocker, 2 high, 1 medium, 0 low
 
-[BLOCKER] Paid usage limit appears enforced only in the browser [SV-COST-006]
+[BLOCKER] Paid usage limit appears enforced only in the browser [STS-COST-006]
   app/page.tsx:9
   Why: This file stores a usage limit in browser-controlled storage while a paid API path appears reachable from the same client flow. Users can edit browser storage and bypass the limit.
 
@@ -116,11 +129,28 @@ ShipVerdict 0.1.0  /app
 
 Legal/compliance checks are not legal advice, do not create an attorney-client relationship, and should be reviewed by a qualified professional.
 
+## Launch Hardening
+
+`safetoship fix` creates `SAFETOSHIP_HARDENING_PLAN.md` inside the target app. The plan groups every finding into one of three buckets:
+
+- `safe-autofix`: deterministic fixes SafeToShip can apply with `--apply-safe`.
+- `agent-repair`: changes that touch auth, data access, billing, privacy, or app behavior and should be handled by Codex, Claude Code, Cursor, or a maintainer.
+- `manual-review`: human checks like trademark/IP attestation or legal review.
+
+Safe autofixes in v0.1:
+
+- disable simple `productionBrowserSourceMaps: true` Next.js configs.
+- create a review-required `PRIVACY.md` starter when data collection is detected.
+- create a review-required `TERMS.md` starter when accounts, payments, or user content are detected.
+
+SafeToShip intentionally does not blindly move API keys, rewrite RLS policies, or change billing/auth flows. For those, it gives an exact repair prompt with the file path, risk, and acceptance criteria.
+
 ## CLI
 
 ```bash
-shipverdict audit [target]
-shipverdict quick [target]
+safetoship audit [target]
+safetoship quick [target]
+safetoship fix [target]
 ```
 
 Options:
@@ -131,10 +161,11 @@ Options:
 - `--fail-on do-not-ship|warnings` controls CI failure behavior.
 - `--no-engines` skips Gitleaks, Semgrep, and OSV-Scanner wrappers.
 - `--exclude <paths>` adds comma-separated exclusions.
+- `fix --apply-safe` applies deterministic safe fixes and writes the remaining hardening plan.
 
 ## Optional Engines
 
-ShipVerdict degrades gracefully if these are missing:
+SafeToShip degrades gracefully if these are missing:
 
 ```bash
 brew install gitleaks
@@ -147,7 +178,7 @@ The core Supabase, cost-abuse, and launch-compliance checks run without external
 ## GitHub Action
 
 ```yaml
-name: ShipVerdict
+name: SafeToShip
 
 on: [pull_request]
 
@@ -156,18 +187,18 @@ permissions:
   security-events: write
 
 jobs:
-  shipverdict:
+  safetoship:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: OWNER/shipverdict@v0.1.0
+      - uses: OWNER/safetoship@v0.1.0
         with:
           target: "."
           fail-on: do-not-ship
       - uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: shipverdict.sarif
+          sarif_file: safetoship.sarif
 ```
 
 ## Demo Fixture
@@ -182,7 +213,7 @@ It demonstrates the core launch-blocker story: exposed frontend key, Supabase `s
 
 ## What This Does NOT Check Yet
 
-ShipVerdict is a launch gate, not proof that an app is secure or legally compliant.
+SafeToShip is a launch gate, not proof that an app is secure or legally compliant.
 
 A static repo scan cannot reliably prove:
 

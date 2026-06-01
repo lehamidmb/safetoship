@@ -1,10 +1,11 @@
-import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { scan } from "../src/scan.js";
+import { createHardeningPlan } from "../src/hardening.js";
 
-describe("ShipVerdict heuristics", () => {
+describe("SafeToShip heuristics", () => {
   it("flags frontend secrets and Supabase service_role exposure", async () => {
     await withProject(async (root) => {
       await write(root, "components/Client.tsx", `
@@ -14,8 +15,8 @@ describe("ShipVerdict heuristics", () => {
       `);
 
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
-      expect(ids(result)).toContain("SV-COST-001");
-      expect(ids(result)).toContain("SV-COST-003");
+      expect(ids(result)).toContain("STS-COST-001");
+      expect(ids(result)).toContain("STS-COST-003");
       expect(result.verdict).toBe("DO-NOT-SHIP");
     });
   });
@@ -28,8 +29,8 @@ describe("ShipVerdict heuristics", () => {
       `);
 
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
-      expect(ids(result)).toContain("SV-COST-004");
-      expect(ids(result)).toContain("SV-COST-005");
+      expect(ids(result)).toContain("STS-COST-004");
+      expect(ids(result)).toContain("STS-COST-005");
     });
   });
 
@@ -52,8 +53,8 @@ describe("ShipVerdict heuristics", () => {
       `);
 
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
-      expect(ids(result)).toContain("SV-COST-006");
-      expect(ids(result)).toContain("SV-COST-007");
+      expect(ids(result)).toContain("STS-COST-006");
+      expect(ids(result)).toContain("STS-COST-007");
     });
   });
 
@@ -73,9 +74,9 @@ describe("ShipVerdict heuristics", () => {
       `);
 
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
-      expect(ids(result)).toContain("SV-LEGAL-001");
-      expect(ids(result)).toContain("SV-LEGAL-002");
-      expect(ids(result)).toContain("SV-LEGAL-005");
+      expect(ids(result)).toContain("STS-LEGAL-001");
+      expect(ids(result)).toContain("STS-LEGAL-002");
+      expect(ids(result)).toContain("STS-LEGAL-005");
     });
   });
 
@@ -85,8 +86,8 @@ describe("ShipVerdict heuristics", () => {
       await write(root, "next.config.js", "module.exports = { productionBrowserSourceMaps: true };");
 
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
-      expect(ids(result)).toContain("SV-TECH-001");
-      expect(ids(result)).toContain("SV-TECH-002");
+      expect(ids(result)).toContain("STS-TECH-001");
+      expect(ids(result)).toContain("STS-TECH-002");
     });
   });
 
@@ -101,15 +102,37 @@ describe("ShipVerdict heuristics", () => {
       `);
 
       const result = await scan({ targetDir: root, mode: "quick", runEngines: false });
-      expect(ids(result)).toContain("SV-QUICK-001");
-      expect(ids(result)).toContain("SV-QUICK-003");
+      expect(ids(result)).toContain("STS-QUICK-001");
+      expect(ids(result)).toContain("STS-QUICK-003");
       expect(result.verdict).toBe("DO-NOT-SHIP");
+    });
+  });
+
+  it("creates a hardening plan and applies deterministic safe fixes", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({ name: "launch-demo", dependencies: { next: "latest" } }));
+      await write(root, "next.config.js", "module.exports = { productionBrowserSourceMaps: true };");
+      await write(root, "app/page.tsx", `
+        export default function Page() {
+          return <input type="email" name="email" />;
+        }
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      const hardening = await createHardeningPlan(result, true);
+      const nextConfig = await readFile(path.join(root, "next.config.js"), "utf8");
+      const plan = await readFile(path.join(root, "SAFETOSHIP_HARDENING_PLAN.md"), "utf8");
+
+      expect(nextConfig).toContain("productionBrowserSourceMaps: false");
+      expect(hardening.changedFiles).toContain("PRIVACY.md");
+      expect(hardening.changedFiles).toContain("SAFETOSHIP_HARDENING_PLAN.md");
+      expect(plan).toContain("SafeToShip Hardening Plan");
     });
   });
 });
 
 async function withProject(run: (root: string) => Promise<void>): Promise<void> {
-  const root = await mkdtemp(path.join(os.tmpdir(), "shipverdict-"));
+  const root = await mkdtemp(path.join(os.tmpdir(), "safetoship-"));
   try {
     await run(root);
   } finally {

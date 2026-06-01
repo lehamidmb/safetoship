@@ -1,5 +1,5 @@
-name: ShipVerdict
-description: Run ShipVerdict, a local pre-launch gate for vibe-coded apps.
+name: SafeToShip
+description: Run SafeToShip, a local launch hardening gate for vibe-coded apps.
 inputs:
   target:
     description: Directory to scan.
@@ -12,10 +12,10 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Run ShipVerdict
+    - name: Run SafeToShip
       shell: bash
       run: |
-        npx shipverdict audit "${{ inputs.target }}" \
-          --sarif shipverdict.sarif \
-          --markdown shipverdict-report.md \
+        npx safetoship audit "${{ inputs.target }}" \
+          --sarif safetoship.sarif \
+          --markdown safetoship-report.md \
           --fail-on "${{ inputs.fail-on }}"
