@@ -1,5 +1,5 @@
 name: ShipVerdict
-description: Run a pre-launch security and compliance gate for AI-generated apps.
+description: Run ShipVerdict, a local pre-launch gate for vibe-coded apps.
 inputs:
   target:
     description: Directory to scan.

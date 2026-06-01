@@ -1,7 +1,7 @@
 {
   "name": "shipverdict",
   "version": "0.1.0",
-  "description": "A local-first pre-launch security and compliance gate for AI-generated apps.",
+  "description": "Vibe code with peace of mind: a local pre-launch gate for exposed keys, Supabase gaps, cost abuse, and launch compliance.",
   "type": "module",
   "bin": {
     "shipverdict": "dist/cli.js"
@@ -24,7 +24,11 @@
     "supabase",
     "nextjs",
     "vibe-coding",
+    "ai-generated-code",
+    "launch-gate",
     "compliance",
+    "privacy-policy",
+    "cost-abuse",
     "cli",
     "github-action"
   ],
