@@ -163,6 +163,10 @@ export function findTrademarkAttestation(files: ProjectFile[]): Finding[] {
     return [];
   }
 
+  if (hasTrademarkAttestation(files, productName.name)) {
+    return [];
+  }
+
   return [
     {
       id: "STS-LEGAL-005",
@@ -218,8 +222,9 @@ function findDataCollectionSignal(files: ProjectFile[]): { file: ProjectFile; li
 }
 
 function findTermsNeedSignal(files: ProjectFile[]): { file: ProjectFile; line: number } | undefined {
-  const pattern = /(next-auth|supabase\.auth|signIn\(|stripe|checkout|subscription|billing|textarea|contenteditable|upload|comment|post|user generated|ugc)/i;
-  return firstSignal(files, pattern);
+  const paymentPattern = /(stripe|checkout|subscription|billing|payment)/i;
+  const accountOrContentPattern = /(next-auth|supabase\.auth|signIn\(|textarea|contenteditable|upload|comment|user generated|ugc)/i;
+  return firstSignal(files, paymentPattern) ?? firstSignal(files, accountOrContentPattern);
 }
 
 function firstSignal(files: ProjectFile[], pattern: RegExp): { file: ProjectFile; line: number } | undefined {
@@ -231,6 +236,18 @@ function firstSignal(files: ProjectFile[], pattern: RegExp): { file: ProjectFile
   }
 
   return undefined;
+}
+
+function hasTrademarkAttestation(files: ProjectFile[], productName: string): boolean {
+  const normalizedName = productName.toLowerCase();
+  return files.some((file) => {
+    const content = file.content.toLowerCase();
+    return (
+      /trademark|ip attestation|launch checklist|uspto|tess/.test(content) &&
+      content.includes(normalizedName) &&
+      /(checked|searched|reviewed|attested|confirmed|clear|no confusingly similar)/.test(content)
+    );
+  });
 }
 
 function extractProductName(files: ProjectFile[]): { name: string; file: ProjectFile; line: number } | undefined {

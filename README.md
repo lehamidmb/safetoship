@@ -80,10 +80,10 @@ The goal is simple: keep the speed of vibe coding, but add a real launch hardeni
 
 ```text
 SafeToShip 0.1.0  /app
- DO-NOT-SHIP   7 finding(s): 4 blocker, 2 high, 1 medium, 0 low
+ DO-NOT-SHIP   14 finding(s): 9 blocker, 3 high, 2 medium, 0 low
 
 [BLOCKER] Paid usage limit appears enforced only in the browser [STS-COST-006]
-  app/page.tsx:9
+  app/page.tsx:12
   Why: This file stores a usage limit in browser-controlled storage while a paid API path appears reachable from the same client flow. Users can edit browser storage and bypass the limit.
 
   Claude Code / Codex / Cursor fix prompt:

@@ -15,13 +15,13 @@ const PAID_API_SIGNAL = /(openai|@anthropic-ai|anthropic|stripe|resend|sendgrid|
 const RATE_LIMIT_SIGNAL = /(@upstash\/ratelimit|express-rate-limit|rateLimit|ratelimit|rate-limit|limiter|throttle|slowDown|token bucket|sliding window)/i;
 
 export function runAbuseCostRules(files: ProjectFile[]): Finding[] {
-  return [
+  return collapseOverlappingSecretFindings([
     ...findFrontendSecrets(files),
     ...findSupabaseServiceRoleInClient(files),
     ...findSupabaseRlsProblems(files),
     ...findClientSideOnlyUsageLimits(files),
     ...findPaidEndpointsWithoutRateLimits(files)
-  ];
+  ]);
 }
 
 export function findFrontendSecrets(files: ProjectFile[]): Finding[] {
@@ -219,6 +219,37 @@ function dedupe(findings: Finding[]): Finding[] {
     }
     seen.add(key);
     return true;
+  });
+}
+
+function collapseOverlappingSecretFindings(findings: Finding[]): Finding[] {
+  const secretRuleRank = new Map([
+    ["STS-COST-003", 3],
+    ["STS-COST-001", 2],
+    ["STS-COST-002", 1]
+  ]);
+  const bestSecretFindingByLocation = new Map<string, Finding>();
+
+  for (const finding of findings) {
+    const rank = secretRuleRank.get(finding.id);
+    if (!rank || !finding.file || !finding.line) {
+      continue;
+    }
+
+    const key = `${finding.file}:${finding.line}`;
+    const current = bestSecretFindingByLocation.get(key);
+    if (!current || rank > (secretRuleRank.get(current.id) ?? 0)) {
+      bestSecretFindingByLocation.set(key, finding);
+    }
+  }
+
+  return findings.filter((finding) => {
+    const rank = secretRuleRank.get(finding.id);
+    if (!rank || !finding.file || !finding.line) {
+      return true;
+    }
+
+    return bestSecretFindingByLocation.get(`${finding.file}:${finding.line}`) === finding;
   });
 }
 
