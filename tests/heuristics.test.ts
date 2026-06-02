@@ -6,6 +6,51 @@ import { scan } from "../src/scan.js";
 import { createHardeningPlan } from "../src/hardening.js";
 
 describe("SafeToShip heuristics", () => {
+  it.each([
+    {
+      fixture: "fixtures/clean-next-supabase",
+      verdict: "SHIP",
+      ids: []
+    },
+    {
+      fixture: "fixtures/legal-gaps",
+      verdict: "DO-NOT-SHIP",
+      ids: ["STS-LEGAL-001", "STS-LEGAL-002", "STS-LEGAL-003", "STS-LEGAL-004"]
+    },
+    {
+      fixture: "fixtures/cost-abuse",
+      verdict: "DO-NOT-SHIP",
+      ids: ["STS-COST-006", "STS-COST-007"]
+    },
+    {
+      fixture: "fixtures/insecure-next-supabase",
+      verdict: "DO-NOT-SHIP",
+      ids: [
+        "STS-COST-001",
+        "STS-COST-003",
+        "STS-COST-004",
+        "STS-COST-005",
+        "STS-COST-006",
+        "STS-COST-007",
+        "STS-LEGAL-001",
+        "STS-LEGAL-002",
+        "STS-LEGAL-004",
+        "STS-LEGAL-005",
+        "STS-LEGAL-006",
+        "STS-TECH-001",
+        "STS-TECH-002"
+      ]
+    }
+  ])("scans $fixture with the expected verdict and rule set", async ({ fixture, verdict, ids: expectedIds }) => {
+    const result = await scan({ targetDir: path.resolve(fixture), mode: "audit", runEngines: false });
+
+    expect(result.verdict).toBe(verdict);
+    expect(uniqueIds(result)).toEqual([...expectedIds].sort());
+    if (fixture === "fixtures/clean-next-supabase") {
+      expect(result.findings.filter((finding) => finding.severity === "BLOCKER")).toHaveLength(0);
+    }
+  });
+
   it("flags frontend secrets and Supabase service_role exposure", async () => {
     await withProject(async (root) => {
       await write(root, "components/Client.tsx", `
@@ -18,6 +63,38 @@ describe("SafeToShip heuristics", () => {
       expect(ids(result)).toContain("STS-COST-001");
       expect(ids(result)).toContain("STS-COST-003");
       expect(result.verdict).toBe("DO-NOT-SHIP");
+    });
+  });
+
+  it("flags direct frontend secrets without duplicating overlapping public-env findings", async () => {
+    await withProject(async (root) => {
+      await write(root, "components/Client.tsx", `
+        "use client";
+        const directSecret = "sk-fake-demo-key-do-not-use";
+        const publicSecret = process.env.NEXT_PUBLIC_OPENAI_API_KEY || "sk-fake-demo-key-do-not-use";
+        const serviceRole = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(result)).toContain("STS-COST-001");
+      expect(ids(result)).toContain("STS-COST-002");
+      expect(ids(result)).toContain("STS-COST-003");
+
+      const overlappingSecretFindings = result.findings.filter(
+        (finding) =>
+          finding.file === "components/Client.tsx" &&
+          finding.line === 4 &&
+          ["STS-COST-001", "STS-COST-002", "STS-COST-003"].includes(finding.id)
+      );
+      expect(overlappingSecretFindings.map((finding) => finding.id)).toEqual(["STS-COST-001"]);
+
+      const serviceRoleFindings = result.findings.filter(
+        (finding) =>
+          finding.file === "components/Client.tsx" &&
+          finding.line === 5 &&
+          ["STS-COST-001", "STS-COST-002", "STS-COST-003"].includes(finding.id)
+      );
+      expect(serviceRoleFindings.map((finding) => finding.id)).toEqual(["STS-COST-003"]);
     });
   });
 
@@ -131,6 +208,43 @@ describe("SafeToShip heuristics", () => {
       expect(plan).toContain("SafeToShip Hardening Plan");
     });
   });
+
+  it("has true-positive and true-negative coverage for every legal and cost rule", async () => {
+    await withProject(async (root) => {
+      await write(root, "components/Client.tsx", `
+        "use client";
+        const directSecret = "sk-fake-demo-key-do-not-use";
+      `);
+
+      const directSecretResult = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      const fixtureResults = await Promise.all(
+        ["fixtures/insecure-next-supabase", "fixtures/legal-gaps", "fixtures/cost-abuse", "fixtures/clean-next-supabase"].map(
+          async (fixture) => scan({ targetDir: path.resolve(fixture), mode: "audit", runEngines: false })
+        )
+      );
+      const positiveIds = new Set([...fixtureResults.flatMap((result) => ids(result)), ...ids(directSecretResult)]);
+      const cleanResult = fixtureResults[3];
+
+      for (const ruleId of [
+        "STS-COST-001",
+        "STS-COST-002",
+        "STS-COST-003",
+        "STS-COST-004",
+        "STS-COST-005",
+        "STS-COST-006",
+        "STS-COST-007",
+        "STS-LEGAL-001",
+        "STS-LEGAL-002",
+        "STS-LEGAL-003",
+        "STS-LEGAL-004",
+        "STS-LEGAL-005",
+        "STS-LEGAL-006"
+      ]) {
+        expect(positiveIds.has(ruleId), `${ruleId} should have a true-positive fixture`).toBe(true);
+        expect(ids(cleanResult).includes(ruleId), `${ruleId} should not fire in the clean fixture`).toBe(false);
+      }
+    });
+  });
 });
 
 async function withProject(run: (root: string) => Promise<void>): Promise<void> {
@@ -150,4 +264,8 @@ async function write(root: string, relativePath: string, content: string): Promi
 
 function ids(result: { findings: Array<{ id: string }> }): string[] {
   return result.findings.map((finding) => finding.id);
+}
+
+function uniqueIds(result: { findings: Array<{ id: string }> }): string[] {
+  return [...new Set(ids(result))].sort();
 }
