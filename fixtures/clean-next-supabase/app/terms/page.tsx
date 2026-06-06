@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms of Use",
+  description: "The terms governing use of Clean Next Supabase."
+};
+
 export default function TermsPage() {
   return (
     <main>
