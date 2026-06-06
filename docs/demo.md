@@ -23,6 +23,8 @@ High-signal findings to show:
 - public Supabase tables without obvious RLS
 - paid AI endpoint without server-side rate limiting
 - browser-only quota in `localStorage`
+- cookie-authenticated state change without an obvious CSRF/origin check
+- wildcard CORS on a state-changing API route
 - missing privacy policy
 - analytics loaded before consent
 

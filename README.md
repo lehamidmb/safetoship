@@ -8,7 +8,7 @@ SafeToShip is a local pre-launch gate for AI-built apps. Run it before you publi
 - `SHIP-WITH-WARNINGS`
 - `DO-NOT-SHIP`
 
-It looks for the mistakes AI coding tools and first-time builders often miss: private API keys in the frontend, Supabase RLS gaps, `service_role` exposure, browser-only usage limits, paid API routes with no rate limit, missing privacy policies, missing Terms of Use, and other launch risks.
+It looks for the mistakes AI coding tools and first-time builders often miss: private API keys in the frontend, Supabase RLS gaps, `service_role` exposure, browser-only usage limits, paid API routes with no rate limit, missing CSRF/origin checks, permissive CORS, missing privacy policies, missing Terms of Use, and other launch risks.
 
 SafeToShip is not another wall of scanner output. It gives you a decision, explains the risk like a human, and turns the findings into a launch hardening plan for Claude Code, Codex, Cursor, or a human maintainer.
 
@@ -52,7 +52,7 @@ To apply deterministic safe fixes and write the remaining repair plan:
 npx safetoship fix --apply-safe
 ```
 
-Until the package is published, run locally:
+To run the repository source locally:
 
 ```bash
 npm install
@@ -79,11 +79,11 @@ The goal is simple: keep the speed of vibe coding, but add a real launch hardeni
 ## Example Output
 
 ```text
-SafeToShip 0.1.0  /app
- DO-NOT-SHIP   14 finding(s): 9 blocker, 3 high, 2 medium, 0 low
+SafeToShip 0.1.1  /app
+ DO-NOT-SHIP   16 finding(s): 8 blocker, 6 high, 2 medium, 0 low
 
 [BLOCKER] Paid usage limit appears enforced only in the browser [STS-COST-006]
-  app/page.tsx:12
+  components/DemoLaunchClient.tsx:13
   Why: This file stores a usage limit in browser-controlled storage while a paid API path appears reachable from the same client flow. Users can edit browser storage and bypass the limit.
 
   Claude Code / Codex / Cursor fix prompt:
@@ -116,6 +116,8 @@ SafeToShip 0.1.0  /app
 ### App Security Basics
 
 - Missing Next.js security headers.
+- Cookie/session-authenticated state-changing Next.js routes without an obvious CSRF or same-origin check.
+- State-changing Next.js routes with permissive wildcard CORS.
 - Optional Semgrep CE wrapper for first-party code vulnerabilities.
 - Optional OSV-Scanner wrapper for known vulnerable dependencies.
 
@@ -193,7 +195,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: lehamidmb/safetoship@v0.1.0
+      - uses: lehamidmb/safetoship@v0.1.1
         with:
           target: "."
           fail-on: do-not-ship
@@ -211,7 +213,7 @@ This repo includes an intentionally unsafe demo app:
 node dist/cli.js audit fixtures/insecure-next-supabase --no-engines
 ```
 
-It demonstrates the core launch-blocker story: exposed frontend key, Supabase `service_role` in client code, RLS-off tables, a client-side quota limit, a paid AI route with no rate limit, analytics before consent, and no privacy policy.
+It demonstrates the core launch-blocker story: exposed frontend key, Supabase `service_role` in client code, RLS-off tables, a client-side quota limit, a paid AI route with no rate limit, a cookie-authenticated route without CSRF protection, wildcard CORS, analytics before consent, and no privacy policy.
 
 ## What This Does NOT Check Yet
 
@@ -220,6 +222,7 @@ SafeToShip is a launch gate, not proof that an app is secure or legally complian
 A static repo scan cannot reliably prove:
 
 - BOLA/IDOR object-level authorization is safe.
+- every runtime CSRF, CORS, proxy, and origin enforcement path is safe.
 - Supabase RLS policies are correct, only that obvious RLS setup exists.
 - secrets injected only into a built frontend bundle are absent.
 - every dependency is legitimate or not typo-squatted.
@@ -232,7 +235,6 @@ The product is honest on purpose: it catches high-signal mistakes, explains them
 - Build-then-scan for `.next`, `dist`, and deployed frontend bundles.
 - Live Supabase anon-key probes for RLS behavior.
 - Dependency existence and slopsquat similarity checks.
-- CSRF and CORS framework-specific rules.
 - PR comment bot with the plain-English report.
 - Optional BYOK explanation mode that never becomes required for core scans.
 

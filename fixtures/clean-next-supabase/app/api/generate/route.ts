@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import OpenAI from "openai";
 import { createServerSupabaseClient } from "../../../lib/supabaseServer";
 
@@ -8,6 +9,16 @@ const rateLimit = {
 };
 
 export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin !== process.env.APP_ORIGIN) {
+    return Response.json({ error: "Untrusted origin" }, { status: 403 });
+  }
+
+  const session = (await cookies()).get("session");
+  if (!session) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
   });
