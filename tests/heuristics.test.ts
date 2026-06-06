@@ -38,7 +38,9 @@ describe("SafeToShip heuristics", () => {
         "STS-LEGAL-005",
         "STS-LEGAL-006",
         "STS-TECH-001",
-        "STS-TECH-002"
+        "STS-TECH-002",
+        "STS-TECH-003",
+        "STS-TECH-004"
       ]
     }
   ])("scans $fixture with the expected verdict and rule set", async ({ fixture, verdict, ids: expectedIds }) => {
@@ -166,6 +168,73 @@ describe("SafeToShip heuristics", () => {
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
       expect(ids(result)).toContain("STS-TECH-001");
       expect(ids(result)).toContain("STS-TECH-002");
+    });
+  });
+
+  it("flags cookie-authenticated state changes without CSRF protection and permissive CORS", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({ dependencies: { next: "latest" } }));
+      await write(root, "app/api/account/route.ts", `
+        import { cookies } from "next/headers";
+        export async function DELETE() {
+          const session = (await cookies()).get("session");
+          return Response.json(
+            { deleted: Boolean(session) },
+            { headers: { "Access-Control-Allow-Origin": "*" } }
+          );
+        }
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(result)).toContain("STS-TECH-003");
+      expect(ids(result)).toContain("STS-TECH-004");
+    });
+  });
+
+  it("does not flag origin-protected cookie routes or public webhook routes", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({ dependencies: { next: "latest" } }));
+      await write(root, "app/api/account/route.ts", `
+        import { cookies } from "next/headers";
+        export async function PATCH(request: Request) {
+          const origin = request.headers.get("origin");
+          if (origin !== process.env.APP_ORIGIN) {
+            return new Response("Forbidden", { status: 403 });
+          }
+          const session = (await cookies()).get("session");
+          return Response.json({ updated: Boolean(session) });
+        }
+      `);
+      await write(root, "app/api/webhook/route.ts", `
+        export async function POST(request: Request) {
+          const signature = request.headers.get("stripe-signature");
+          return Response.json({ accepted: Boolean(signature) });
+        }
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(result)).not.toContain("STS-TECH-003");
+      expect(ids(result)).not.toContain("STS-TECH-004");
+    });
+  });
+
+  it("checks legacy Next.js pages API routes for cookie-authenticated state changes", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({ dependencies: { next: "latest" } }));
+      await write(root, "pages/api/profile.ts", `
+        export default async function handler(req, res) {
+          if (req.method === "PUT") {
+            const session = req.cookies.session;
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            return res.json({ updated: Boolean(session) });
+          }
+          return res.status(405).end();
+        }
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(result)).toContain("STS-TECH-003");
+      expect(ids(result)).toContain("STS-TECH-004");
     });
   });
 

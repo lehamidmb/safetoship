@@ -9,7 +9,7 @@ import { HONEST_SCOPE_LIMITS } from "./scope.js";
 import type { EngineStatus, Finding, ScanOptions, ScanResult } from "./types.js";
 import { decideVerdict, summarize } from "./verdict.js";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.1.1";
 
 export async function scan(options: Partial<ScanOptions> & { targetDir: string; mode: "audit" | "quick" }): Promise<ScanResult> {
   const targetDir = path.resolve(options.targetDir);

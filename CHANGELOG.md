@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- Added high-signal CSRF checks for cookie/session-authenticated state-changing Next.js App Router and Pages Router API routes.
+- Added permissive CORS detection for state-changing Next.js API routes.
+- Added protected and vulnerable fixture coverage while preserving exact launch verdict contracts.
+- Brought all four React fixture apps to React Doctor 100/100 and made their production builds deterministic.
+- Moved paid-provider client construction into request handlers so fixture production builds do not require credentials during module evaluation.
+
 ## 0.1.0
 
 - Added the `safetoship audit`, `safetoship quick`, and `safetoship fix` CLI commands.

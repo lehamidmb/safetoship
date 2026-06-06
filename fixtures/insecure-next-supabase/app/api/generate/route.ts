@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import OpenAI from "openai";
 
 export async function POST(request: Request) {
+  const session = (await cookies()).get("session");
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
   });
@@ -10,5 +12,8 @@ export async function POST(request: Request) {
     input: body.prompt
   });
 
-  return Response.json({ text: result.output_text });
+  return Response.json(
+    { text: result.output_text, session: Boolean(session) },
+    { headers: { "Access-Control-Allow-Origin": "*" } }
+  );
 }

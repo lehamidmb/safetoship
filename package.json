@@ -1,6 +1,6 @@
 {
   "name": "safetoship",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vibe code with peace of mind: a local launch hardening agent for exposed keys, Supabase gaps, cost abuse, and launch compliance.",
   "type": "module",
   "repository": {
