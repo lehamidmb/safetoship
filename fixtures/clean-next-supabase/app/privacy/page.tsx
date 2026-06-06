@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy",
+  description: "How Clean Next Supabase collects, uses, and protects data."
+};
+
 export default function PrivacyPage() {
   return (
     <main>

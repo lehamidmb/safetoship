@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createServerSupabaseClient } from "../../../lib/supabaseServer";
 
 const rateLimit = {
   async limit(_key: string) {
@@ -6,11 +7,10 @@ const rateLimit = {
   }
 };
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export async function POST(request: Request) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  });
   const ip = request.headers.get("x-forwarded-for") ?? "anonymous";
   const quota = await rateLimit.limit(ip);
 
@@ -22,6 +22,11 @@ export async function POST(request: Request) {
   const response = await openai.responses.create({
     model: "gpt-5-mini",
     input: body.prompt
+  });
+  const supabase = createServerSupabaseClient();
+  await supabase.from("generations").insert({
+    prompt: body.prompt,
+    response: response.output_text
   });
 
   return Response.json({ text: response.output_text });

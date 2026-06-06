@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Clean Next Supabase",
+  description: "A launch-ready Next.js and Supabase fixture for SafeToShip."
+};
+
 export default function Page() {
   return (
     <main>
