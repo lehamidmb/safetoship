@@ -1,10 +1,11 @@
 import pc from "picocolors";
+import { reportTarget } from "../reportTarget.js";
 import { LEGAL_BANNER } from "../scope.js";
 import type { Finding, ScanResult, Severity, Verdict } from "../types.js";
 
 export function renderTerminal(result: ScanResult): string {
   const lines: string[] = [];
-  lines.push(`${pc.bold("SafeToShip")} ${pc.dim(result.version)}  ${pc.dim(result.targetDir)}`);
+  lines.push(`${pc.bold("SafeToShip")} ${pc.dim(result.version)}  ${pc.dim(reportTarget(result.targetDir))}`);
   lines.push(`${renderVerdict(result.verdict)}  ${summaryText(result)}`);
   lines.push("");
   lines.push(pc.yellow(`Legal/compliance banner: ${LEGAL_BANNER}`));
@@ -18,6 +19,12 @@ export function renderTerminal(result: ScanResult): string {
     }
   }
 
+  if (result.warnings.length > 0) {
+    lines.push("");
+    lines.push(pc.bold("Configuration Warnings"));
+    for (const warning of result.warnings) lines.push(`- ${warning}`);
+  }
+
   if (result.findings.length > 0) {
     lines.push("");
     lines.push(pc.bold("Findings"));
@@ -27,6 +34,16 @@ export function renderTerminal(result: ScanResult): string {
   } else {
     lines.push("");
     lines.push(pc.green("No findings. Keep this boring and keep shipping carefully."));
+  }
+
+
+  if (result.acceptedRisks.length > 0) {
+    lines.push("");
+    lines.push(pc.bold(`Accepted Risks (${result.acceptedRisks.length})`));
+    for (const finding of result.acceptedRisks) {
+      const location = finding.file ? `${finding.file}${finding.line ? `:${finding.line}` : ""}` : "project";
+      lines.push(`- ${finding.id} at ${location}: ${finding.suppressionReason}`);
+    }
   }
 
   lines.push("");
@@ -42,6 +59,7 @@ function renderFinding(finding: Finding): string {
   const location = finding.file ? `${finding.file}${finding.line ? `:${finding.line}` : ""}` : "project";
   return [
     `\n${severityLabel(finding.severity)} ${pc.bold(finding.title)} ${pc.dim(`[${finding.id}]`)}`,
+    `  Confidence: ${finding.confidence ?? "medium"}${finding.needsReview ? " - NEEDS REVIEW" : ""}`,
     `  ${pc.dim(location)}`,
     `  Why: ${finding.why}`,
     indent(finding.fixPrompt, "  ")
@@ -75,7 +93,8 @@ function severityLabel(severity: Severity): string {
 
 function summaryText(result: ScanResult): string {
   const summary = result.summary;
-  return `${summary.total} finding(s): ${summary.blockers} blocker, ${summary.high} high, ${summary.medium} medium, ${summary.low} low`;
+  const accepted = summary.suppressed > 0 ? `, ${summary.suppressed} accepted risk(s)` : "";
+  return `${summary.total} finding(s): ${summary.blockers} blocker, ${summary.high} high, ${summary.medium} medium, ${summary.low} low${accepted}`;
 }
 
 function indent(value: string, prefix: string): string {

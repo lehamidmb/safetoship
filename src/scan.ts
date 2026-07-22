@@ -1,4 +1,6 @@
 import path from "node:path";
+import { loadConfig } from "./config.js";
+import { applyFindingPolicy } from "./findings.js";
 import { collectProjectFiles, defaultExcludes } from "./project.js";
 import { runEngines } from "./engines.js";
 import { runTechnicalRules } from "./rules/technical.js";
@@ -9,11 +11,12 @@ import { HONEST_SCOPE_LIMITS } from "./scope.js";
 import type { EngineStatus, Finding, ScanOptions, ScanResult } from "./types.js";
 import { decideVerdict, summarize } from "./verdict.js";
 
-export const VERSION = "0.1.2";
+export const VERSION = "0.2.0";
 
 export async function scan(options: Partial<ScanOptions> & { targetDir: string; mode: "audit" | "quick" }): Promise<ScanResult> {
   const targetDir = path.resolve(options.targetDir);
-  const excludes = [...defaultExcludes(), ...(options.excludes ?? [])];
+  const { config, warnings: configWarnings } = await loadConfig(targetDir);
+  const excludes = [...defaultExcludes(), ...config.exclude, ...(options.excludes ?? [])];
   const files = await collectProjectFiles(targetDir, excludes);
   const engineStatuses: EngineStatus[] = [];
   const findings: Finding[] = [];
@@ -32,7 +35,11 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     }
   }
 
-  const sortedFindings = sortFindings(findings);
+  const policy = applyFindingPolicy(findings, files, config);
+  const sortedFindings = sortFindings(policy.findings);
+  const acceptedRisks = sortFindings(policy.acceptedRisks);
+  const summary = summarize(sortedFindings);
+  summary.suppressed = acceptedRisks.length;
 
   return {
     tool: "safetoship",
@@ -41,10 +48,12 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     targetDir,
     mode: options.mode,
     verdict: decideVerdict(sortedFindings),
-    summary: summarize(sortedFindings),
+    summary,
     findings: sortedFindings,
+    acceptedRisks,
     engineStatuses,
-    limits: HONEST_SCOPE_LIMITS
+    limits: HONEST_SCOPE_LIMITS,
+    warnings: [...new Set([...configWarnings, ...policy.warnings])]
   };
 }
 
@@ -55,11 +64,22 @@ function sortFindings(findings: Finding[]): Finding[] {
     ["MEDIUM", 2],
     ["LOW", 3]
   ]);
+  const confidenceRank = new Map([
+    ["high", 0],
+    ["medium", 1],
+    ["low", 2]
+  ]);
 
   return [...findings].sort((a, b) => {
     const severity = (severityRank.get(a.severity) ?? 9) - (severityRank.get(b.severity) ?? 9);
     if (severity !== 0) {
       return severity;
+    }
+
+    const confidence = (confidenceRank.get(a.confidence ?? "medium") ?? 9) -
+      (confidenceRank.get(b.confidence ?? "medium") ?? 9);
+    if (confidence !== 0) {
+      return confidence;
     }
 
     return `${a.file ?? ""}:${a.line ?? 0}:${a.id}`.localeCompare(`${b.file ?? ""}:${b.line ?? 0}:${b.id}`);

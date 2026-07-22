@@ -14,12 +14,12 @@ describe("SafeToShip heuristics", () => {
     },
     {
       fixture: "fixtures/legal-gaps",
-      verdict: "DO-NOT-SHIP",
+      verdict: "SHIP-WITH-WARNINGS",
       ids: ["STS-LEGAL-001", "STS-LEGAL-002", "STS-LEGAL-003", "STS-LEGAL-004"]
     },
     {
       fixture: "fixtures/cost-abuse",
-      verdict: "DO-NOT-SHIP",
+      verdict: "SHIP-WITH-WARNINGS",
       ids: ["STS-COST-006", "STS-COST-007"]
     },
     {

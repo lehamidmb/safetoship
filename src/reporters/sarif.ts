@@ -33,7 +33,11 @@ function ruleFromFinding(finding: Finding) {
     shortDescription: { text: finding.title },
     fullDescription: { text: finding.why },
     help: { text: finding.fixPrompt },
-    defaultConfiguration: { level: sarifLevel(finding.severity) }
+    defaultConfiguration: { level: sarifLevel(finding.severity) },
+    properties: {
+      confidence: finding.confidence ?? "medium",
+      fingerprint: finding.fingerprint
+    }
   };
 }
 
@@ -41,7 +45,9 @@ function resultFromFinding(finding: Finding) {
   const result: Record<string, unknown> = {
     ruleId: finding.id,
     level: sarifLevel(finding.severity),
-    message: { text: `${finding.title}: ${finding.why}` }
+    message: { text: `${finding.title}: ${finding.why}` },
+    partialFingerprints: finding.fingerprint ? { safeToShipFingerprint: finding.fingerprint } : undefined,
+    properties: { confidence: finding.confidence ?? "medium", needsReview: finding.needsReview ?? false }
   };
 
   if (finding.file) {
