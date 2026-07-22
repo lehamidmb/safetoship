@@ -6,8 +6,7 @@ This demo shows the core story: a vibe-coded app can work locally while still be
 
 ```bash
 npm install
-npm run build
-node dist/cli.js audit fixtures/insecure-next-supabase --no-engines
+npm run demo
 ```
 
 Expected verdict:
@@ -50,3 +49,14 @@ Expected safe changes:
 ## Demo Close
 
 SafeToShip does not pretend to magically rewrite auth, billing, RLS, or legal terms. It applies boring safe hardening where deterministic, then hands the risky parts to Codex, Claude Code, Cursor, or a maintainer with exact repair prompts.
+
+## Run With Codex
+
+Install the repository's Codex plugin, then ask Codex to run the audit, prepare reviewed repairs, and re-audit:
+
+```bash
+codex plugin marketplace add lehamidmb/safetoship --ref v0.2.0
+codex plugin add safetoship@safetoship
+```
+
+The human still approves code changes and every commit, push, publish, or deployment action.

@@ -2,7 +2,7 @@
 
 Vibe code with peace of mind.
 
-SafeToShip is a local pre-launch gate for AI-built apps. Run it before you publish and it tells you, in plain English, whether your app is ready to ship:
+SafeToShip is a local pre-launch gate and Codex plugin for AI-built apps. Before you publish, it gives Codex deterministic evidence and gives you one plain-English verdict:
 
 - `SHIP`
 - `SHIP-WITH-WARNINGS`
@@ -10,7 +10,7 @@ SafeToShip is a local pre-launch gate for AI-built apps. Run it before you publi
 
 It looks for the mistakes AI coding tools and first-time builders often miss: private API keys in the frontend, Supabase RLS gaps, `service_role` exposure, browser-only usage limits, paid API routes with no rate limit, missing CSRF/origin checks, permissive CORS, missing privacy policies, missing Terms of Use, and other launch risks.
 
-SafeToShip is not another wall of scanner output. It gives you a decision, explains the risk like a human, and turns the findings into a launch hardening plan for Claude Code, Codex, Cursor, or a human maintainer.
+SafeToShip is not another wall of scanner output. Codex can run the audit, repair high-confidence blockers, and re-audit the result. You remain in control of commits, publishing, and deployment.
 
 ## Why This Exists
 
@@ -29,6 +29,23 @@ A vibe-coded app can look finished while quietly shipping with:
 SafeToShip is the friend who stops you at the door and says: "This works, but do not launch it yet. Here is exactly what to fix."
 
 ## Quick Start
+
+### Install In Codex
+
+```bash
+codex plugin marketplace add lehamidmb/safetoship --ref v0.2.0
+codex plugin add safetoship@safetoship
+```
+
+Then ask Codex:
+
+```text
+Use SafeToShip to audit and harden this app before I launch it.
+```
+
+The plugin runs the pinned SafeToShip release, handles the findings in the current Codex task, and re-audits after reviewed repairs. Codex never commits, pushes, publishes, or deploys without your explicit approval.
+
+### Use The CLI
 
 ```bash
 npx safetoship audit
@@ -52,6 +69,12 @@ To apply deterministic safe fixes and write the remaining repair plan:
 npx safetoship fix --apply-safe
 ```
 
+To understand a rule or document an accepted risk:
+
+```bash
+npx safetoship explain STS-COST-006
+```
+
 To run the repository source locally:
 
 ```bash
@@ -67,22 +90,27 @@ Most security tools assume you already know what a CVE, SARIF report, CSP header
 SafeToShip assumes you are trying to launch an app and need a clear answer.
 
 - Verdict first: `SHIP`, `SHIP-WITH-WARNINGS`, or `DO-NOT-SHIP`.
+- Confidence-aware: direct evidence can block; heuristic evidence is marked `NEEDS-REVIEW` instead of pretending certainty.
+- Reviewable exceptions: inline and repository suppressions require a reason and remain visible as accepted risks.
+- Agent-ready: versioned JSON, stable finding fingerprints, and an installable Codex skill.
 - Built for the AI-builder stack: Next.js, Supabase, Node, serverless, paid AI APIs.
 - Catches cost-abuse patterns ordinary scanners miss, like client-side quota limits.
 - Includes launch compliance basics: privacy policy, Terms of Use, provider disclosure, consent signals, and trademark attestation.
 - Turns findings into copy-paste repair tasks for Claude Code, Codex, and Cursor.
 - Applies safe hardening fixes for deterministic issues like source maps and missing policy starter docs.
 - Runs locally by default. No API key required.
+- Produces share-safe reports without machine-specific home paths or discovered secret values.
 
 The goal is simple: keep the speed of vibe coding, but add a real launch hardening pass before users, attackers, app stores, lawyers, or cloud bills get involved.
 
 ## Example Output
 
 ```text
-SafeToShip 0.1.2  /app
+SafeToShip 0.2.0  /app
  DO-NOT-SHIP   16 finding(s): 8 blocker, 6 high, 2 medium, 0 low
 
 [BLOCKER] Paid usage limit appears enforced only in the browser [STS-COST-006]
+  Confidence: medium - NEEDS REVIEW
   components/DemoLaunchClient.tsx:13
   Why: This file stores a usage limit in browser-controlled storage while a paid API path appears reachable from the same client flow. Users can edit browser storage and bypass the limit.
 
@@ -140,7 +168,7 @@ Legal/compliance checks are not legal advice, do not create an attorney-client r
 - `agent-repair`: changes that touch auth, data access, billing, privacy, or app behavior and should be handled by Codex, Claude Code, Cursor, or a maintainer.
 - `manual-review`: human checks like trademark/IP attestation or legal review.
 
-Safe autofixes in v0.1:
+Safe autofixes in v0.2:
 
 - disable simple `productionBrowserSourceMaps: true` Next.js configs.
 - create a review-required `PRIVACY.md` starter when data collection is detected.
@@ -155,6 +183,7 @@ SafeToShip intentionally does not blindly move API keys, rewrite RLS policies, o
 safetoship audit [target]
 safetoship quick [target]
 safetoship fix [target]
+safetoship explain <rule-id>
 ```
 
 Options:
@@ -162,10 +191,38 @@ Options:
 - `--json` prints structured JSON.
 - `--sarif <file>` writes SARIF for code scanning upload.
 - `--markdown <file>` writes a plain-English report.
-- `--fail-on do-not-ship|warnings` controls CI failure behavior.
+- `--fail-on do-not-ship|warnings|never` controls CI failure behavior.
 - `--no-engines` skips Gitleaks, Semgrep, and OSV-Scanner wrappers.
 - `--exclude <paths>` adds comma-separated exclusions.
 - `fix --apply-safe` applies deterministic safe fixes and writes the remaining hardening plan.
+
+## Confidence And Accepted Risks
+
+SafeToShip separates impact from certainty. A `BLOCKER` with high-confidence direct evidence produces `DO-NOT-SHIP`. A medium-confidence blocker produces `SHIP-WITH-WARNINGS` and a `NEEDS-REVIEW` marker. Low-confidence advisories do not affect the verdict.
+
+To accept a reviewed risk on the finding line or immediately above it:
+
+```ts
+// safetoship-ignore STS-COST-006 reason="server middleware enforces the real quota"
+```
+
+Repository-level policy lives in `.safetoshiprc.json`:
+
+```json
+{
+  "exclude": ["examples"],
+  "rules": {
+    "STS-COST-006": {
+      "enabled": false,
+      "reason": "server middleware enforces the real quota"
+    }
+  }
+}
+```
+
+Accepted risks are excluded from verdict math but remain visible in terminal, JSON, Markdown, and PR output. Overrides can reduce severity or confidence; they cannot silently make a rule stricter or erase its audit trail.
+
+The versioned agent contract is documented in [`docs/schema/v1.json`](docs/schema/v1.json).
 
 ## Optional Engines
 
@@ -177,7 +234,7 @@ brew install osv-scanner
 python3 -m pip install semgrep
 ```
 
-The core Supabase, cost-abuse, and launch-compliance checks run without external tools or API keys.
+The core Supabase, cost-abuse, and launch-compliance checks run without external tools or API keys. Semgrep uses SafeToShip-authored Apache-2.0 rules from the package with metrics disabled; it does not fetch registry rules.
 
 ## GitHub Action
 
@@ -195,7 +252,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: lehamidmb/safetoship@v0.1.2
+      - uses: lehamidmb/safetoship@v0.2.0
         with:
           target: "."
           fail-on: do-not-ship
@@ -210,7 +267,7 @@ jobs:
 This repo includes an intentionally unsafe demo app:
 
 ```bash
-node dist/cli.js audit fixtures/insecure-next-supabase --no-engines
+npm run demo
 ```
 
 It demonstrates the core launch-blocker story: exposed frontend key, Supabase `service_role` in client code, RLS-off tables, a client-side quota limit, a paid AI route with no rate limit, a cookie-authenticated route without CSRF protection, wildcard CORS, analytics before consent, and no privacy policy.
@@ -233,9 +290,8 @@ The product is honest on purpose: it catches high-signal mistakes, explains them
 ## Roadmap
 
 - Build-then-scan for `.next`, `dist`, and deployed frontend bundles.
-- Live Supabase anon-key probes for RLS behavior.
+- Carefully scoped Supabase exposure probes that report observed access without claiming RLS is proven safe.
 - Dependency existence and slopsquat similarity checks.
-- PR comment bot with the plain-English report.
 - Optional BYOK explanation mode that never becomes required for core scans.
 
 ## License
