@@ -79,7 +79,7 @@ The goal is simple: keep the speed of vibe coding, but add a real launch hardeni
 ## Example Output
 
 ```text
-SafeToShip 0.1.1  /app
+SafeToShip 0.1.2  /app
  DO-NOT-SHIP   16 finding(s): 8 blocker, 6 high, 2 medium, 0 low
 
 [BLOCKER] Paid usage limit appears enforced only in the browser [STS-COST-006]
@@ -195,7 +195,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: lehamidmb/safetoship@v0.1.1
+      - uses: lehamidmb/safetoship@v0.1.2
         with:
           target: "."
           fail-on: do-not-ship

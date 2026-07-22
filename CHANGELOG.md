@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Replaced the abbreviated license text with the complete official Apache License 2.0.
+- Refreshed the compatible TypeScript test toolchain and restored fast, deterministic local test runs.
+- Updated vulnerable transitive development tooling so `npm audit` reports zero known vulnerabilities.
+
 ## 0.1.1
 
 - Added high-signal CSRF checks for cookie/session-authenticated state-changing Next.js App Router and Pages Router API routes.

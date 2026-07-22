@@ -21,6 +21,6 @@ body:
     id: version
     attributes:
       label: SafeToShip version
-      placeholder: "0.1.0"
+      placeholder: "0.1.2"
     validations:
       required: false
