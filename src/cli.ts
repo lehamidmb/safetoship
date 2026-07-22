@@ -5,9 +5,11 @@ import { Command } from "commander";
 import { scan, VERSION } from "./scan.js";
 import { createHardeningPlan, renderHardeningResult } from "./hardening.js";
 import { renderMarkdown } from "./reporters/markdown.js";
+import { renderJson } from "./reporters/json.js";
 import { renderSarif } from "./reporters/sarif.js";
 import { renderTerminal } from "./reporters/terminal.js";
 import type { ScanResult, Verdict } from "./types.js";
+import { metadataFor, RULE_METADATA } from "./ruleMetadata.js";
 
 interface CliOptions {
   json?: boolean;
@@ -31,7 +33,7 @@ program
   .option("--json", "print JSON instead of terminal output")
   .option("--sarif <file>", "write SARIF output to a file")
   .option("--markdown <file>", "write a Markdown report to a file")
-  .option("--fail-on <level>", "exit non-zero on do-not-ship or warnings", "do-not-ship")
+  .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
@@ -43,6 +45,28 @@ program
     });
     await writeOutputs(result, options);
     exitForVerdict(result.verdict, options.failOn);
+  });
+
+program
+  .command("explain")
+  .argument("<rule-id>", "SafeToShip rule ID, for example STS-COST-006")
+  .description("Explain a rule, its confidence, and how to accept a reviewed risk.")
+  .action((ruleId: string) => {
+    const normalized = ruleId.toUpperCase();
+    if (!RULE_METADATA.has(normalized)) {
+      throw new Error(`Unknown SafeToShip rule: ${normalized}`);
+    }
+    const metadata = metadataFor(normalized);
+    process.stdout.write([
+      `${metadata.id} - ${metadata.checks}`,
+      `Default severity: ${metadata.defaultSeverity}`,
+      `Confidence: ${metadata.confidence}`,
+      `Why this confidence: ${metadata.confidenceRationale}`,
+      `Known false positives: ${metadata.knownFalsePositives}`,
+      "",
+      `Inline suppression: // safetoship-ignore ${metadata.id} reason=\"explain the accepted risk here\"`,
+      `Repository config: {\"rules\":{\"${metadata.id}\":{\"enabled\":false,\"reason\":\"explain the accepted risk here\"}}}`
+    ].join("\n") + "\n");
   });
 
 program
@@ -76,7 +100,7 @@ program
   .option("--json", "print JSON instead of terminal output")
   .option("--sarif <file>", "write SARIF output to a file")
   .option("--markdown <file>", "write a Markdown report to a file")
-  .option("--fail-on <level>", "exit non-zero on do-not-ship or warnings", "do-not-ship")
+  .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
     const result = await scan({
@@ -89,7 +113,13 @@ program
     exitForVerdict(result.verdict, options.failOn);
   });
 
-await program.parseAsync();
+try {
+  await program.parseAsync();
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  process.stderr.write(`SafeToShip error: ${message}\n`);
+  process.exitCode = 3;
+}
 
 async function writeOutputs(result: ScanResult, options: CliOptions): Promise<void> {
   if (options.sarif) {
@@ -101,7 +131,7 @@ async function writeOutputs(result: ScanResult, options: CliOptions): Promise<vo
   }
 
   if (options.json) {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    process.stdout.write(`${renderJson(result)}\n`);
     return;
   }
 
@@ -116,6 +146,9 @@ async function writeFile(filePath: string, content: string): Promise<void> {
 
 function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
   const normalized = failOn.toLowerCase();
+  if (!["do-not-ship", "warnings", "never"].includes(normalized)) {
+    throw new Error(`Invalid --fail-on value: ${failOn}. Use do-not-ship, warnings, or never.`);
+  }
   const shouldFail =
     normalized === "warnings"
       ? verdict === "DO-NOT-SHIP" || verdict === "SHIP-WITH-WARNINGS"

@@ -1,0 +1,27 @@
+{
+  "name": "safetoship",
+  "version": "0.2.0",
+  "description": "Audit, harden, and re-audit AI-built apps before launch.",
+  "author": {
+    "name": "Hamid",
+    "url": "https://github.com/lehamidmb"
+  },
+  "homepage": "https://github.com/lehamidmb/safetoship",
+  "repository": "https://github.com/lehamidmb/safetoship",
+  "license": "Apache-2.0",
+  "keywords": ["security", "launch", "vibe-coding", "supabase", "nextjs"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "SafeToShip",
+    "shortDescription": "Run a pre-launch safety gate from Codex.",
+    "longDescription": "SafeToShip helps Codex audit an AI-built app, repair high-confidence launch blockers, and re-audit before the human decides to deploy.",
+    "developerName": "Hamid",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/lehamidmb/safetoship",
+    "defaultPrompt": [
+      "Audit this app with SafeToShip before I launch it.",
+      "Use SafeToShip to harden this project and show what still needs review."
+    ]
+  }
+}

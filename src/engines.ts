@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import path from "node:path";
 import type { EngineStatus, Finding } from "./types.js";
 import { fixPrompt } from "./fixPrompt.js";
@@ -89,7 +90,8 @@ function runSemgrep(targetDir: string): { findings: Finding[]; status: EngineSta
     };
   }
 
-  const result = spawnSync("semgrep", ["--config", "auto", "--json", "--quiet", targetDir], {
+  const rulesPath = fileURLToPath(new URL("../rules/semgrep/safetoship.yml", import.meta.url));
+  const result = spawnSync("semgrep", ["--config", rulesPath, "--metrics", "off", "--json", "--quiet", targetDir], {
     encoding: "utf8",
     maxBuffer: 40 * 1024 * 1024
   });
@@ -129,7 +131,9 @@ function runSemgrep(targetDir: string): { findings: Finding[]; status: EngineSta
     status: {
       name: "semgrep",
       status: "ran",
-      message: findings.length === 0 ? "No semgrep findings parsed." : `Parsed ${findings.length} semgrep finding(s).`
+      message: findings.length === 0
+        ? "No findings from SafeToShip's local Semgrep rules (metrics off)."
+        : `Parsed ${findings.length} finding(s) from SafeToShip's local Semgrep rules (metrics off).`
     }
   };
 }

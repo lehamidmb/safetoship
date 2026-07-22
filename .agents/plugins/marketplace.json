@@ -1,0 +1,20 @@
+{
+  "name": "safetoship",
+  "interface": {
+    "displayName": "SafeToShip"
+  },
+  "plugins": [
+    {
+      "name": "safetoship",
+      "source": {
+        "source": "local",
+        "path": "./plugins/safetoship"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

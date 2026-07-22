@@ -1,4 +1,5 @@
 import { LEGAL_BANNER } from "../scope.js";
+import { reportTarget } from "../reportTarget.js";
 import type { ScanResult } from "../types.js";
 
 export function renderMarkdown(result: ScanResult): string {
@@ -6,7 +7,7 @@ export function renderMarkdown(result: ScanResult): string {
   lines.push(`# SafeToShip Report`);
   lines.push("");
   lines.push(`**Verdict:** ${result.verdict}`);
-  lines.push(`**Target:** \`${result.targetDir}\``);
+  lines.push(`**Target:** \`${reportTarget(result.targetDir)}\``);
   lines.push(`**Generated:** ${result.generatedAt}`);
   lines.push("");
   lines.push(`> ${LEGAL_BANNER}`);
@@ -18,16 +19,27 @@ export function renderMarkdown(result: ScanResult): string {
   lines.push(`- High: ${result.summary.high}`);
   lines.push(`- Medium: ${result.summary.medium}`);
   lines.push(`- Low: ${result.summary.low}`);
+  lines.push(`- Accepted risks: ${result.summary.suppressed}`);
   lines.push("");
 
   if (result.findings.length > 0) {
-    lines.push("## Findings");
+    lines.push("## What To Fix First");
+    lines.push("");
+    for (const finding of result.findings.slice(0, 3)) {
+      const location = finding.file ? `${finding.file}${finding.line ? `:${finding.line}` : ""}` : "project";
+      lines.push(`- **${finding.severity}: ${finding.title}** (\`${location}\`)`);
+      lines.push(`  ${finding.why}`);
+    }
+    lines.push("");
+    lines.push("<details>");
+    lines.push(`<summary>All technical findings (${result.findings.length})</summary>`);
     lines.push("");
     for (const finding of result.findings) {
       const location = finding.file ? `${finding.file}${finding.line ? `:${finding.line}` : ""}` : "project";
       lines.push(`### ${finding.severity}: ${finding.title}`);
       lines.push("");
       lines.push(`- Rule: \`${finding.id}\``);
+      lines.push(`- Confidence: ${finding.confidence ?? "medium"}${finding.needsReview ? " (needs review)" : ""}`);
       lines.push(`- Location: \`${location}\``);
       lines.push(`- Why: ${finding.why}`);
       lines.push("");
@@ -36,6 +48,17 @@ export function renderMarkdown(result: ScanResult): string {
       lines.push("```");
       lines.push("");
     }
+    lines.push("</details>");
+    lines.push("");
+  }
+
+  if (result.acceptedRisks.length > 0) {
+    lines.push(`## Accepted Risks (${result.acceptedRisks.length})`);
+    lines.push("");
+    for (const finding of result.acceptedRisks) {
+      lines.push(`- \`${finding.id}\`: ${finding.suppressionReason}`);
+    }
+    lines.push("");
   }
 
   lines.push("## What This Does NOT Check Yet");

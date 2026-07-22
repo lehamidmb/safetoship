@@ -1,0 +1,32 @@
+# SafeToShip-authored Semgrep rules. Licensed Apache-2.0 with this repository.
+rules:
+  - id: safetoship.javascript.eval
+    message: Avoid eval because attacker-controlled input can become executable code.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: "eval(...)"
+
+  - id: safetoship.react.dangerously-set-inner-html
+    message: dangerouslySetInnerHTML can create XSS unless the value is sanitized before rendering.
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern: "<$TAG ... dangerouslySetInnerHTML={{__html: $VALUE}} ... />"
+
+  - id: safetoship.node.exec-template
+    message: A template literal passed to child_process execution can become command injection.
+    severity: ERROR
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-either:
+          - pattern: "exec(`...${$VALUE}...`, ...)"
+          - pattern: "execSync(`...${$VALUE}...`, ...)"
+
+  - id: safetoship.node.raw-error-response
+    message: Returning a raw error object or stack can expose internal application details.
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: "Response.json($ERR.stack)"
+      - pattern: "Response.json($ERR)"
+      - pattern: "$RES.json($ERR)"
+      - pattern: "$RES.send($ERR.stack)"
