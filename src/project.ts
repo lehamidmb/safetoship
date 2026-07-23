@@ -4,6 +4,7 @@ import type { ProjectFile } from "./types.js";
 
 const DEFAULT_EXCLUDES = [
   ".git",
+  ".safetoship",
   "node_modules",
   "dist",
   "build",

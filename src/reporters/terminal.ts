@@ -10,6 +10,13 @@ export function renderTerminal(result: ScanResult): string {
   lines.push("");
   lines.push(pc.yellow(`Legal/compliance banner: ${LEGAL_BANNER}`));
 
+  if (result.delta) {
+    lines.push("");
+    lines.push(pc.bold("Since Baseline"));
+    lines.push(`- ${result.delta.counts.new} new, ${result.delta.counts.resolved} resolved, ${result.delta.counts.unchanged} unchanged`);
+    lines.push(`- Source: ${result.delta.baseline.source}`);
+  }
+
   if (result.engineStatuses.length > 0) {
     lines.push("");
     lines.push(pc.bold("Engine Status"));
@@ -23,6 +30,13 @@ export function renderTerminal(result: ScanResult): string {
     lines.push("");
     lines.push(pc.bold("Configuration Warnings"));
     for (const warning of result.warnings) lines.push(`- ${warning}`);
+  }
+
+  lines.push("");
+  lines.push(pc.bold("Coverage"));
+  lines.push(`- ${result.coverage.scannedFiles} file(s), ${result.coverage.evaluatedRules.length} deterministic rule(s)`);
+  if (!result.coverage.externalEngines.requested) {
+    lines.push("- External engines: not requested");
   }
 
   if (result.findings.length > 0) {

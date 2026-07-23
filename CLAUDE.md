@@ -8,3 +8,4 @@ When contributing to SafeToShip, optimize for trustworthy launch hardening:
 - Do not add legal conclusions. Add legal risk signals and recommend professional review.
 - Keep the CLI fast enough to run before every launch and in pull requests.
 - Treat the Codex plugin as the first complete adapter while keeping the CLI agent-neutral.
+- Keep model-backed semantic security findings separate from SafeToShip's deterministic launch verdict and coverage packet.

@@ -3,6 +3,8 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
 import { scan, VERSION } from "./scan.js";
+import { applyBaseline } from "./baseline.js";
+import { writeLaunchPacket } from "./packet.js";
 import { createHardeningPlan, renderHardeningResult } from "./hardening.js";
 import { renderMarkdown } from "./reporters/markdown.js";
 import { renderJson } from "./reporters/json.js";
@@ -20,11 +22,16 @@ interface CliOptions {
   exclude?: string[];
 }
 
+interface LaunchOptions extends CliOptions {
+  output?: string;
+  baseline?: string;
+}
+
 const program = new Command();
 
 program
   .name("safetoship")
-  .description("Launch hardening agent for AI-generated apps.")
+  .description("Deterministic launch-readiness gate for AI-generated apps.")
   .version(VERSION);
 
 program
@@ -67,6 +74,37 @@ program
       `Inline suppression: // safetoship-ignore ${metadata.id} reason=\"explain the accepted risk here\"`,
       `Repository config: {\"rules\":{\"${metadata.id}\":{\"enabled\":false,\"reason\":\"explain the accepted risk here\"}}}`
     ].join("\n") + "\n");
+  });
+
+program
+  .command("launch")
+  .argument("[target]", "repo or app directory to scan", ".")
+  .description("Create a portable pre-launch evidence packet.")
+  .option("--output <directory>", "write the packet to this directory")
+  .option("--baseline <file>", "compare against a previous SafeToShip findings.json")
+  .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
+  .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
+  .action(async (target: string, options: LaunchOptions) => {
+    const targetDir = path.resolve(target);
+    let result = await scan({
+      targetDir,
+      mode: "audit",
+      runEngines: options.engines !== false,
+      excludes: options.exclude ?? []
+    });
+
+    if (options.baseline) {
+      const baselinePath = path.resolve(options.baseline);
+      const baseline = await fs.readFile(baselinePath, "utf8");
+      result = applyBaseline(result, baseline, portablePath(baselinePath));
+    }
+
+    const outputDir = options.output ? path.resolve(options.output) : path.join(targetDir, ".safetoship", "latest");
+    await writeLaunchPacket(result, outputDir);
+    process.stdout.write(renderTerminal(result));
+    process.stdout.write(`\nLaunch packet: ${portablePath(outputDir)}\n`);
+    exitForVerdict(result.verdict, options.failOn);
   });
 
 program
@@ -161,4 +199,12 @@ function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
 
 function splitCsv(value: string, previous: string[]): string[] {
   return [...previous, ...value.split(",").map((item) => item.trim()).filter(Boolean)];
+}
+
+function portablePath(filePath: string): string {
+  const relative = path.relative(process.cwd(), filePath);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    return relative.split(path.sep).join("/");
+  }
+  return path.basename(filePath);
 }
