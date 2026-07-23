@@ -9,6 +9,12 @@ npm install
 npm run demo
 ```
 
+To generate the complete v0.3 evidence packet:
+
+```bash
+node dist/cli.js launch fixtures/insecure-next-supabase --no-engines --fail-on never
+```
+
 Expected verdict:
 
 ```text
@@ -55,7 +61,7 @@ SafeToShip does not pretend to magically rewrite auth, billing, RLS, or legal te
 Install the repository's Codex plugin, then ask Codex to run the audit, prepare reviewed repairs, and re-audit:
 
 ```bash
-codex plugin marketplace add lehamidmb/safetoship --ref v0.2.0
+codex plugin marketplace add lehamidmb/safetoship --ref v0.3.0
 codex plugin add safetoship@safetoship
 ```
 

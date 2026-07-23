@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { scan } from "../src/scan.js";
+import { applyBaseline } from "../src/baseline.js";
+import { PACKET_FILES, writeLaunchPacket } from "../src/packet.js";
 import { renderJson } from "../src/reporters/json.js";
 import { renderMarkdown } from "../src/reporters/markdown.js";
 
@@ -145,14 +147,14 @@ describe("SafeToShip trust contract", () => {
     const marketplace = JSON.parse(await readFile(path.resolve(".agents/plugins/marketplace.json"), "utf8"));
     const action = await readFile(path.resolve("action.yml"), "utf8");
     const skill = await readFile(path.resolve("plugins/safetoship/skills/safetoship/SKILL.md"), "utf8");
-    const schema = JSON.parse(await readFile(path.resolve("docs/schema/v1.json"), "utf8"));
+    const schema = JSON.parse(await readFile(path.resolve("docs/schema/v2.json"), "utf8"));
 
-    expect(packageJson.version).toBe("0.2.0");
+    expect(packageJson.version).toBe("0.3.0");
     expect(plugin.version).toBe(packageJson.version);
     expect(marketplace.plugins[0].source.path).toBe("./plugins/safetoship");
     expect(action).toContain(`safetoship@${packageJson.version}`);
     expect(skill).toContain(`safetoship@${packageJson.version}`);
-    expect(schema.properties.schemaVersion.const).toBe(1);
+    expect(schema.properties.schemaVersion.const).toBe(2);
   });
 
   it("publishes versioned JSON and concise Markdown contracts", async () => {
@@ -164,13 +166,65 @@ describe("SafeToShip trust contract", () => {
     const json = JSON.parse(renderJson(result));
     const markdown = renderMarkdown(result);
 
-    expect(json.schemaVersion).toBe(1);
-    expect(json.tool).toEqual({ name: "safetoship", version: "0.2.0" });
+    expect(json.schemaVersion).toBe(2);
+    expect(json.tool).toEqual({ name: "safetoship", version: "0.3.0" });
     expect(json.target.path).toBe("fixtures/insecure-next-supabase");
+    expect(json.coverage.scannedFiles).toBeGreaterThan(0);
+    expect(json.coverage.evaluatedRules).toContain("STS-COST-001");
+    expect(json.delta).toBeNull();
     expect(markdown).not.toContain(os.homedir());
     expect(json.findings[0].fingerprint).toMatch(/^[a-f0-9]{16}$/);
     expect(markdown).toContain("## What To Fix First");
     expect(markdown).toContain("<details>");
+  });
+
+  it("compares active findings with v1 or v2 SafeToShip baselines", async () => {
+    const clean = await scan({
+      targetDir: path.resolve("fixtures/clean-next-supabase"),
+      mode: "audit",
+      runEngines: false
+    });
+    const unsafe = await scan({
+      targetDir: path.resolve("fixtures/insecure-next-supabase"),
+      mode: "audit",
+      runEngines: false
+    });
+
+    const compared = applyBaseline(unsafe, renderJson(clean), ".safetoship/previous/findings.json");
+    expect(compared.delta?.counts).toEqual({ new: unsafe.findings.length, resolved: 0, unchanged: 0 });
+    expect(compared.delta?.newFindings[0]?.fingerprint).toMatch(/^[a-f0-9]{16}$/);
+    expect(renderMarkdown(compared)).toContain("## Since The Baseline");
+
+    const v1Baseline = JSON.stringify({ schemaVersion: 1, findings: JSON.parse(renderJson(unsafe)).findings });
+    const unchanged = applyBaseline(unsafe, v1Baseline, "v1-findings.json");
+    expect(unchanged.delta?.counts).toEqual({ new: 0, resolved: 0, unchanged: unsafe.findings.length });
+  });
+
+  it("rejects malformed baseline files with a useful error", async () => {
+    const result = await scan({ targetDir: path.resolve("fixtures/clean-next-supabase"), mode: "audit", runEngines: false });
+    expect(() => applyBaseline(result, "not-json", "broken.json")).toThrow("Baseline is not valid JSON");
+    expect(() => applyBaseline(result, JSON.stringify({ schemaVersion: 7, findings: [] }), "future.json"))
+      .toThrow("schemaVersion 1 or 2");
+  });
+
+  it("writes a share-safe launch packet and excludes it from future scans", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({ name: "packet-demo" }));
+      await write(root, "app/page.tsx", "export default function Page() { return null; }");
+      const before = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      const output = path.join(root, ".safetoship", "latest");
+
+      await writeLaunchPacket(before, output);
+      const after = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(after.coverage.scannedFiles).toBe(before.coverage.scannedFiles);
+
+      for (const name of PACKET_FILES) {
+        expect(await readFile(path.join(output, name), "utf8")).not.toContain(os.homedir());
+      }
+      const manifest = JSON.parse(await readFile(path.join(output, "manifest.json"), "utf8"));
+      expect(manifest.artifacts).toEqual(PACKET_FILES);
+      expect(manifest.verdict).toBe(before.verdict);
+    });
   });
 
   it("uses only local Semgrep rules with metrics disabled", async () => {

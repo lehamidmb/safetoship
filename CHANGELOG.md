@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Added `safetoship launch`, which writes a portable report, findings contract, coverage record, and manifest to `.safetoship/latest`.
+- Added baseline comparison for new, resolved, and unchanged stable finding fingerprints, accepting both v1 and v2 SafeToShip JSON.
+- Added schema v2 with explicit deterministic-rule coverage, exclusions, and external-engine status.
+- Added a Codex `launch-review` skill that keeps SafeToShip launch evidence separate from optional official Codex Security findings.
+- Repositioned SafeToShip as the deterministic launch-readiness companion to deep model-backed security agents.
+- Excluded generated `.safetoship` packets from scans and added share-safety and regression coverage.
+
 ## 0.2.0
 
 - Added confidence-aware verdicts so direct evidence can block while heuristic blockers are labeled for review.
