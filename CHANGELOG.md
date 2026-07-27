@@ -8,6 +8,8 @@
 - Added a Codex `launch-review` skill that keeps SafeToShip launch evidence separate from optional official Codex Security findings.
 - Repositioned SafeToShip as the deterministic launch-readiness companion to deep model-backed security agents.
 - Excluded generated `.safetoship` packets from scans and added share-safety and regression coverage.
+- Added a bounded, verdict-first GitHub PR comment that groups blockers and highs by fix area and includes the top three agent-ready repair prompts.
+- Made the workflow update only its bot-authored sticky comment across paginated PR discussions while preserving the complete Markdown artifact and SARIF upload.
 
 ## 0.2.0
 
