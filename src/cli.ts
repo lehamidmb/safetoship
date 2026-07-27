@@ -6,6 +6,7 @@ import { scan, VERSION } from "./scan.js";
 import { createHardeningPlan, renderHardeningResult } from "./hardening.js";
 import { renderMarkdown } from "./reporters/markdown.js";
 import { renderJson } from "./reporters/json.js";
+import { renderGitHubComment } from "./reporters/github.js";
 import { renderSarif } from "./reporters/sarif.js";
 import { renderTerminal } from "./reporters/terminal.js";
 import type { ScanResult, Verdict } from "./types.js";
@@ -15,6 +16,7 @@ interface CliOptions {
   json?: boolean;
   sarif?: string;
   markdown?: string;
+  githubComment?: string;
   failOn?: string;
   engines?: boolean;
   exclude?: string[];
@@ -33,6 +35,7 @@ program
   .option("--json", "print JSON instead of terminal output")
   .option("--sarif <file>", "write SARIF output to a file")
   .option("--markdown <file>", "write a Markdown report to a file")
+  .option("--github-comment <file>", "write a concise GitHub PR comment to a file")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
@@ -100,6 +103,7 @@ program
   .option("--json", "print JSON instead of terminal output")
   .option("--sarif <file>", "write SARIF output to a file")
   .option("--markdown <file>", "write a Markdown report to a file")
+  .option("--github-comment <file>", "write a concise GitHub PR comment to a file")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
@@ -128,6 +132,10 @@ async function writeOutputs(result: ScanResult, options: CliOptions): Promise<vo
 
   if (options.markdown) {
     await writeFile(options.markdown, renderMarkdown(result));
+  }
+
+  if (options.githubComment) {
+    await writeFile(options.githubComment, renderGitHubComment(result));
   }
 
   if (options.json) {

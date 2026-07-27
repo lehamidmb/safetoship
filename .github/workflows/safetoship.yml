@@ -23,7 +23,7 @@ jobs:
           node-version: 24
       - run: npm ci
       - run: npm run build
-      - run: node dist/cli.js audit . --exclude fixtures,tests --sarif safetoship.sarif --markdown safetoship-report.md --fail-on do-not-ship
+      - run: node dist/cli.js audit . --exclude fixtures,tests --sarif safetoship.sarif --markdown safetoship-report.md --github-comment safetoship-comment.md --fail-on do-not-ship
       - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
@@ -35,14 +35,21 @@ jobs:
           script: |
             const fs = require("fs");
             const marker = "<!-- safetoship-report -->";
-            const report = fs.existsSync("safetoship-report.md")
-              ? fs.readFileSync("safetoship-report.md", "utf8")
-              : "SafeToShip did not produce a report.";
-            const body = `${marker}\n${report.slice(0, 60000)}`;
+            const report = fs.existsSync("safetoship-comment.md")
+              ? fs.readFileSync("safetoship-comment.md", "utf8")
+              : `${marker}\n\n## SafeToShip: audit did not complete\n\nOpen this workflow run for the failure details.`;
+            const body = report.startsWith(marker) ? report : `${marker}\n${report}`;
             const { owner, repo } = context.repo;
             const issue_number = context.payload.pull_request.number;
-            const comments = await github.rest.issues.listComments({ owner, repo, issue_number, per_page: 100 });
-            const existing = comments.data.find((comment) => comment.body && comment.body.includes(marker));
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100
+            });
+            const existing = comments.find(
+              (comment) => comment.user?.type === "Bot" && comment.body?.startsWith(marker)
+            );
             if (existing) {
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
             } else {

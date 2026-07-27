@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added a bounded, verdict-first GitHub PR comment that groups blockers and highs by fix area and includes the top three agent-ready repair prompts.
+- Made the workflow update only its bot-authored sticky comment across paginated PR discussions while preserving the complete Markdown artifact and SARIF upload.
+
 ## 0.2.0
 
 - Added confidence-aware verdicts so direct evidence can block while heuristic blockers are labeled for review.

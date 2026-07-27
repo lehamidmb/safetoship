@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { scan } from "../src/scan.js";
 import { renderJson } from "../src/reporters/json.js";
+import { GITHUB_COMMENT_MARKER, renderGitHubComment } from "../src/reporters/github.js";
 import { renderMarkdown } from "../src/reporters/markdown.js";
 
 describe("SafeToShip trust contract", () => {
@@ -171,6 +172,24 @@ describe("SafeToShip trust contract", () => {
     expect(json.findings[0].fingerprint).toMatch(/^[a-f0-9]{16}$/);
     expect(markdown).toContain("## What To Fix First");
     expect(markdown).toContain("<details>");
+  });
+
+  it("renders a bounded verdict-first GitHub comment grouped by fix area", async () => {
+    const result = await scan({
+      targetDir: path.resolve("fixtures/insecure-next-supabase"),
+      mode: "audit",
+      runEngines: false
+    });
+    const comment = renderGitHubComment(result);
+
+    expect(comment.startsWith(`${GITHUB_COMMENT_MARKER}\n\n## SafeToShip: ${result.verdict}`)).toBe(true);
+    expect(comment).toContain("### Priority fixes by area");
+    expect(comment).toContain("#### Cost and abuse controls");
+    expect(comment).toContain("#### Legal and launch requirements");
+    expect(comment).toContain("### Agent-ready repairs");
+    expect(comment.match(/<details>/g)).toHaveLength(3);
+    expect(comment).toContain(result.findings[0].fixPrompt);
+    expect(comment.length).toBeLessThan(20_000);
   });
 
   it("uses only local Semgrep rules with metrics disabled", async () => {

@@ -191,6 +191,7 @@ Options:
 - `--json` prints structured JSON.
 - `--sarif <file>` writes SARIF for code scanning upload.
 - `--markdown <file>` writes a plain-English report.
+- `--github-comment <file>` writes a concise, verdict-first PR summary.
 - `--fail-on do-not-ship|warnings|never` controls CI failure behavior.
 - `--no-engines` skips Gitleaks, Semgrep, and OSV-Scanner wrappers.
 - `--exclude <paths>` adds comma-separated exclusions.
@@ -237,6 +238,8 @@ python3 -m pip install semgrep
 The core Supabase, cost-abuse, and launch-compliance checks run without external tools or API keys. Semgrep uses SafeToShip-authored Apache-2.0 rules from the package with metrics disabled; it does not fetch registry rules.
 
 ## GitHub Action
+
+The repository workflow uses `--github-comment` to create one sticky PR comment. Each run updates the same bot-authored comment with blockers and highs grouped by fix area plus the top three agent-ready repair prompts. The complete Markdown report and SARIF output remain separate and unchanged.
 
 ```yaml
 name: SafeToShip
