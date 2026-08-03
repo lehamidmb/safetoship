@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fixed paid-endpoint rate-limit detection so TODO comments, quoted examples, and unused imports cannot hide an unprotected provider call.
+
 ## 0.2.0
 
 - Added confidence-aware verdicts so direct evidence can block while heuristic blockers are labeled for review.

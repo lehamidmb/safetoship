@@ -141,6 +141,8 @@ SafeToShip 0.2.0  /app
 - Paid provider endpoints without obvious server-side rate limits.
 - Client flows that can lead to runaway OpenAI, Anthropic, email, SMS, or payment-provider bills.
 
+For `STS-COST-007`, comments, quoted examples, and unused imports do not count as rate-limit protection; SafeToShip looks for an implementation-shaped call in the endpoint.
+
 ### App Security Basics
 
 - Missing Next.js security headers.
