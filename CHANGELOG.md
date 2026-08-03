@@ -10,6 +10,7 @@
 - Excluded generated `.safetoship` packets from scans and added share-safety and regression coverage.
 - Added a bounded, verdict-first GitHub PR comment that groups blockers and highs by fix area and includes the top three agent-ready repair prompts.
 - Made the workflow update only its bot-authored sticky comment across paginated PR discussions while preserving the complete Markdown artifact and SARIF upload.
+- Fixed paid-endpoint rate-limit detection so TODO comments, quoted examples, and unused imports cannot hide an unprotected provider call.
 
 ## 0.2.0
 

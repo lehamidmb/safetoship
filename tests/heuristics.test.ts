@@ -137,6 +137,40 @@ describe("SafeToShip heuristics", () => {
     });
   });
 
+  it("does not mistake rate-limit TODOs or examples for implemented protection", async () => {
+    await withProject(async (root) => {
+      await write(root, "app/api/commented/route.ts", `
+        import OpenAI from "openai";
+        import { Ratelimit } from "@upstash/ratelimit";
+        // TODO: call rateLimit(request) before launch.
+        const example = "limiter.limit(userId)";
+        export async function POST() {
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          return Response.json(await openai.responses.create({ model: "gpt-5-mini", input: "hi" }));
+        }
+      `);
+      await write(root, "app/api/protected/route.ts", `
+        import OpenAI from "openai";
+        const rateLimiter = {
+          async limit(_key: string) {
+            return { success: true };
+          }
+        };
+        export async function POST(request: Request) {
+          const decision = await rateLimiter.limit(request.headers.get("x-forwarded-for") ?? "anonymous");
+          if (!decision.success) return new Response("Too many requests", { status: 429 });
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          return Response.json(await openai.responses.create({ model: "gpt-5-mini", input: "hi" }));
+        }
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      const rateLimitFindings = result.findings.filter((finding) => finding.id === "STS-COST-007");
+
+      expect(rateLimitFindings.map((finding) => finding.file)).toEqual(["app/api/commented/route.ts"]);
+    });
+  });
+
   it("flags missing privacy policy and payment terms", async () => {
     await withProject(async (root) => {
       await write(root, "package.json", JSON.stringify({ name: "paid-demo", dependencies: { stripe: "latest" } }));

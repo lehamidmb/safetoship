@@ -12,7 +12,8 @@ const SECRETISH_PUBLIC_ENV =
   /\bNEXT_PUBLIC_[A-Z0-9_]*(?:SECRET|TOKEN|PASSWORD|PRIVATE|SERVICE_ROLE|OPENAI|ANTHROPIC|STRIPE|TWILIO|SENDGRID|RESEND)[A-Z0-9_]*\b/g;
 const DIRECT_SECRET_VALUE = /(sk_live_[A-Za-z0-9_-]+|sk-[A-Za-z0-9_-]{8,}|service_role|SUPABASE_SERVICE_ROLE|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)/i;
 const PAID_API_SIGNAL = /(openai|@anthropic-ai|anthropic|stripe|resend|sendgrid|twilio|mailgun|postmark|elevenlabs|replicate)/i;
-const RATE_LIMIT_SIGNAL = /(@upstash\/ratelimit|express-rate-limit|rateLimit|ratelimit|rate-limit|limiter|throttle|slowDown|token bucket|sliding window)/i;
+const RATE_LIMIT_CALL_SIGNAL =
+  /\b(?:rateLimit|ratelimit|rateLimiter|limiter|throttle|slowDown)\s*(?:\(|\.)|\bnew\s+(?:Ratelimit|RateLimiter\w*)\s*\(/i;
 
 export function runAbuseCostRules(files: ProjectFile[]): Finding[] {
   return collapseOverlappingSecretFindings([
@@ -187,7 +188,11 @@ export function findPaidEndpointsWithoutRateLimits(files: ProjectFile[]): Findin
   const findings: Finding[] = [];
 
   for (const file of files) {
-    if (!isServerEndpointPath(file.relativePath) || !PAID_API_SIGNAL.test(file.content) || RATE_LIMIT_SIGNAL.test(file.content)) {
+    if (
+      !isServerEndpointPath(file.relativePath) ||
+      !PAID_API_SIGNAL.test(file.content) ||
+      hasRateLimitImplementation(file.content)
+    ) {
       continue;
     }
 
@@ -208,6 +213,72 @@ export function findPaidEndpointsWithoutRateLimits(files: ProjectFile[]): Findin
   }
 
   return findings;
+}
+
+function hasRateLimitImplementation(content: string): boolean {
+  return RATE_LIMIT_CALL_SIGNAL.test(maskJavaScript(content));
+}
+
+function maskJavaScript(content: string): string {
+  let result = "";
+  let state: "code" | "line-comment" | "block-comment" | "single-quote" | "double-quote" | "template" = "code";
+  let escaped = false;
+
+  for (let index = 0; index < content.length; index += 1) {
+    const char = content[index];
+    const next = content[index + 1];
+
+    if (state === "line-comment") {
+      if (char === "\n") {
+        state = "code";
+        result += char;
+      } else {
+        result += " ";
+      }
+      continue;
+    }
+
+    if (state === "block-comment") {
+      if (char === "*" && next === "/") {
+        result += "  ";
+        index += 1;
+        state = "code";
+      } else {
+        result += char === "\n" ? "\n" : " ";
+      }
+      continue;
+    }
+
+    if (state !== "code") {
+      const quote = state === "single-quote" ? "'" : state === "double-quote" ? '"' : "`";
+      result += char === "\n" ? "\n" : " ";
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === quote) {
+        state = "code";
+      }
+      continue;
+    }
+
+    if (char === "/" && next === "/") {
+      result += "  ";
+      index += 1;
+      state = "line-comment";
+    } else if (char === "/" && next === "*") {
+      result += "  ";
+      index += 1;
+      state = "block-comment";
+    } else if (char === "'" || char === '"' || char === "`") {
+      result += " ";
+      state = char === "'" ? "single-quote" : char === '"' ? "double-quote" : "template";
+    } else {
+      result += char;
+    }
+  }
+
+  return result;
 }
 
 function dedupe(findings: Finding[]): Finding[] {
