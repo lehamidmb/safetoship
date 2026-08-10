@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Pinned patched transitive `nanoid` and `postcss` releases used by the test/build toolchain, resolving GHSA-2v37-7h3g-55p8 and GHSA-fxqj-rqcc-2cmp without changing production dependencies.
+
 ## 0.2.0
 
 - Added confidence-aware verdicts so direct evidence can block while heuristic blockers are labeled for review.
