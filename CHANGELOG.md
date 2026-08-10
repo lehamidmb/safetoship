@@ -11,6 +11,7 @@
 - Added a bounded, verdict-first GitHub PR comment that groups blockers and highs by fix area and includes the top three agent-ready repair prompts.
 - Made the workflow update only its bot-authored sticky comment across paginated PR discussions while preserving the complete Markdown artifact and SARIF upload.
 - Fixed paid-endpoint rate-limit detection so TODO comments, quoted examples, and unused imports cannot hide an unprotected provider call.
+- Pinned patched transitive `nanoid` and `postcss` releases used by the test/build toolchain, resolving GHSA-2v37-7h3g-55p8 and GHSA-fxqj-rqcc-2cmp without changing production dependencies.
 
 ## 0.2.0
 

@@ -158,6 +158,19 @@ describe("SafeToShip trust contract", () => {
     expect(schema.properties.schemaVersion.const).toBe(2);
   });
 
+  it("pins patched transitive build dependencies in the lockfile", async () => {
+    const packageJson = JSON.parse(await readFile(path.resolve("package.json"), "utf8"));
+    const packageLock = JSON.parse(await readFile(path.resolve("package-lock.json"), "utf8"));
+
+    for (const [dependency, expectedVersion] of Object.entries({
+      nanoid: "3.3.18",
+      postcss: "8.5.26"
+    })) {
+      expect(packageJson.overrides[dependency]).toBe(expectedVersion);
+      expect(packageLock.packages[`node_modules/${dependency}`].version).toBe(expectedVersion);
+    }
+  });
+
   it("publishes versioned JSON and concise Markdown contracts", async () => {
     const result = await scan({
       targetDir: path.resolve("fixtures/insecure-next-supabase"),
