@@ -251,16 +251,18 @@ jobs:
   safetoship:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: lehamidmb/safetoship@v0.2.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: lehamidmb/safetoship@b4157485c6717d06d99457eb6bccac7b4d829bfe # v0.2.0
         with:
           target: "."
           fail-on: do-not-ship
-      - uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         if: always()
         with:
           sarif_file: safetoship.sarif
 ```
+
+The example pins each action to a full commit SHA so a mutable tag cannot silently change the workflow. The version comments keep reviewed updates straightforward.
 
 ## Demo Fixture
 

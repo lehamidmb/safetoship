@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Pinned third-party GitHub Actions to reviewed commit SHAs and documented the same immutable-reference pattern for consumers.
+
 ## 0.2.0
 
 - Added confidence-aware verdicts so direct evidence can block while heuristic blockers are labeled for review.

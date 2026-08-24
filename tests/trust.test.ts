@@ -179,6 +179,19 @@ describe("SafeToShip trust contract", () => {
     expect(source).toContain('"--metrics", "off"');
     expect(source).toContain("rules/semgrep/safetoship.yml");
   });
+
+  it("pins third-party GitHub Actions to immutable commit SHAs", async () => {
+    const workflow = await readFile(path.resolve(".github/workflows/safetoship.yml"), "utf8");
+    const actionLines = workflow.split("\n").filter((line) => line.includes("uses:"));
+
+    expect(actionLines.length).toBeGreaterThan(0);
+    for (const line of actionLines) {
+      const action = line.match(/uses:\s+([^\s#]+)/)?.[1];
+      const versionComment = line.match(/#\s+(v\d+\.\d+\.\d+)\s*$/)?.[1];
+      expect(action).toMatch(/^[\w.-]+\/[\w.-]+(?:\/[\w.-]+)?@[a-f0-9]{40}$/);
+      expect(versionComment).toBeDefined();
+    }
+  });
 });
 
 async function withProject(run: (root: string) => Promise<void>): Promise<void> {
