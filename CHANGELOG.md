@@ -12,6 +12,7 @@
 - Made the workflow update only its bot-authored sticky comment across paginated PR discussions while preserving the complete Markdown artifact and SARIF upload.
 - Fixed paid-endpoint rate-limit detection so TODO comments, quoted examples, and unused imports cannot hide an unprotected provider call.
 - Pinned patched transitive `nanoid` and `postcss` releases used by the test/build toolchain, resolving GHSA-2v37-7h3g-55p8 and GHSA-fxqj-rqcc-2cmp without changing production dependencies.
+- Pinned third-party GitHub Actions to reviewed commit SHAs and documented the same immutable-reference pattern for consumers.
 
 ## 0.2.0
 
