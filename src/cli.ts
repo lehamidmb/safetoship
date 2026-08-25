@@ -3,9 +3,12 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { Command } from "commander";
 import { scan, VERSION } from "./scan.js";
+import { applyBaseline } from "./baseline.js";
+import { writeLaunchPacket } from "./packet.js";
 import { createHardeningPlan, renderHardeningResult } from "./hardening.js";
 import { renderMarkdown } from "./reporters/markdown.js";
 import { renderJson } from "./reporters/json.js";
+import { renderGitHubComment } from "./reporters/github.js";
 import { renderSarif } from "./reporters/sarif.js";
 import { renderTerminal } from "./reporters/terminal.js";
 import type { ScanResult, Verdict } from "./types.js";
@@ -15,16 +18,22 @@ interface CliOptions {
   json?: boolean;
   sarif?: string;
   markdown?: string;
+  githubComment?: string;
   failOn?: string;
   engines?: boolean;
   exclude?: string[];
+}
+
+interface LaunchOptions extends CliOptions {
+  output?: string;
+  baseline?: string;
 }
 
 const program = new Command();
 
 program
   .name("safetoship")
-  .description("Launch hardening agent for AI-generated apps.")
+  .description("Deterministic launch-readiness gate for AI-generated apps.")
   .version(VERSION);
 
 program
@@ -33,6 +42,7 @@ program
   .option("--json", "print JSON instead of terminal output")
   .option("--sarif <file>", "write SARIF output to a file")
   .option("--markdown <file>", "write a Markdown report to a file")
+  .option("--github-comment <file>", "write a concise GitHub PR comment to a file")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
@@ -70,6 +80,37 @@ program
   });
 
 program
+  .command("launch")
+  .argument("[target]", "repo or app directory to scan", ".")
+  .description("Create a portable pre-launch evidence packet.")
+  .option("--output <directory>", "write the packet to this directory")
+  .option("--baseline <file>", "compare against a previous SafeToShip findings.json")
+  .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
+  .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
+  .action(async (target: string, options: LaunchOptions) => {
+    const targetDir = path.resolve(target);
+    let result = await scan({
+      targetDir,
+      mode: "audit",
+      runEngines: options.engines !== false,
+      excludes: options.exclude ?? []
+    });
+
+    if (options.baseline) {
+      const baselinePath = path.resolve(options.baseline);
+      const baseline = await fs.readFile(baselinePath, "utf8");
+      result = applyBaseline(result, baseline, portablePath(baselinePath));
+    }
+
+    const outputDir = options.output ? path.resolve(options.output) : path.join(targetDir, ".safetoship", "latest");
+    await writeLaunchPacket(result, outputDir);
+    process.stdout.write(renderTerminal(result));
+    process.stdout.write(`\nLaunch packet: ${portablePath(outputDir)}\n`);
+    exitForVerdict(result.verdict, options.failOn);
+  });
+
+program
   .command("fix")
   .argument("[target]", "repo or app directory to harden", ".")
   .description("Generate an agent-ready launch hardening plan, with optional safe autofixes.")
@@ -100,6 +141,7 @@ program
   .option("--json", "print JSON instead of terminal output")
   .option("--sarif <file>", "write SARIF output to a file")
   .option("--markdown <file>", "write a Markdown report to a file")
+  .option("--github-comment <file>", "write a concise GitHub PR comment to a file")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
@@ -128,6 +170,10 @@ async function writeOutputs(result: ScanResult, options: CliOptions): Promise<vo
 
   if (options.markdown) {
     await writeFile(options.markdown, renderMarkdown(result));
+  }
+
+  if (options.githubComment) {
+    await writeFile(options.githubComment, renderGitHubComment(result));
   }
 
   if (options.json) {
@@ -161,4 +207,12 @@ function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
 
 function splitCsv(value: string, previous: string[]): string[] {
   return [...previous, ...value.split(",").map((item) => item.trim()).filter(Boolean)];
+}
+
+function portablePath(filePath: string): string {
+  const relative = path.relative(process.cwd(), filePath);
+  if (relative && !relative.startsWith("..") && !path.isAbsolute(relative)) {
+    return relative.split(path.sep).join("/");
+  }
+  return path.basename(filePath);
 }

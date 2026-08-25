@@ -2,6 +2,8 @@
 
 SafeToShip is a local-first OSS launch hardening agent for AI-generated apps and an installable Codex plugin. Keep the product honest: prefer exact file/line evidence, plain-English risk explanations, safe autofixes where deterministic, and repair workflows Codex can execute under human review.
 
+SafeToShip complements deep semantic security agents; it does not claim to replace Codex Security, Claude Security, SAST, or runtime testing. Keep their findings and SafeToShip verdict math separate.
+
 Rules:
 
 - Do not claim the tool proves an app is secure or legally compliant.
@@ -13,3 +15,4 @@ Rules:
 - Every legal/compliance report must include the not-legal-advice banner.
 - Add tests for every new heuristic and a fixture when the behavior is user-visible.
 - Run `npm run check`, the self-audit, plugin validation, and `npm pack --dry-run` before release.
+- Keep launch packets portable: no absolute home paths, discovered secret values, or silent skipped checks.

@@ -8,10 +8,11 @@ import { runAbuseCostRules } from "./rules/abuseCost.js";
 import { runLegalRules } from "./rules/legal.js";
 import { runQuickRules } from "./rules/quick.js";
 import { HONEST_SCOPE_LIMITS } from "./scope.js";
+import { RULE_METADATA } from "./ruleMetadata.js";
 import type { EngineStatus, Finding, ScanOptions, ScanResult } from "./types.js";
 import { decideVerdict, summarize } from "./verdict.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 
 export async function scan(options: Partial<ScanOptions> & { targetDir: string; mode: "audit" | "quick" }): Promise<ScanResult> {
   const targetDir = path.resolve(options.targetDir);
@@ -20,6 +21,7 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
   const files = await collectProjectFiles(targetDir, excludes);
   const engineStatuses: EngineStatus[] = [];
   const findings: Finding[] = [];
+  const enginesRequested = options.mode === "audit" && options.runEngines !== false;
 
   if (options.mode === "quick") {
     findings.push(...runQuickRules(files));
@@ -28,7 +30,7 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     findings.push(...runLegalRules(files));
     findings.push(...runTechnicalRules(files));
 
-    if (options.runEngines !== false) {
+    if (enginesRequested) {
       const engineResult = runEngines(targetDir);
       findings.push(...engineResult.findings);
       engineStatuses.push(...engineResult.statuses);
@@ -52,9 +54,24 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     findings: sortedFindings,
     acceptedRisks,
     engineStatuses,
+    coverage: {
+      scannedFiles: files.length,
+      evaluatedRules: evaluatedRuleIds(options.mode),
+      excludedPaths: [...new Set(excludes)].sort(),
+      externalEngines: {
+        requested: enginesRequested,
+        statuses: engineStatuses
+      }
+    },
+    delta: null,
     limits: HONEST_SCOPE_LIMITS,
     warnings: [...new Set([...configWarnings, ...policy.warnings])]
   };
+}
+
+function evaluatedRuleIds(mode: "audit" | "quick"): string[] {
+  const prefixes = mode === "quick" ? ["STS-QUICK-", "STS-META-"] : ["STS-COST-", "STS-LEGAL-", "STS-TECH-", "STS-META-"];
+  return [...RULE_METADATA.keys()].filter((id) => prefixes.some((prefix) => id.startsWith(prefix))).sort();
 }
 
 function sortFindings(findings: Finding[]): Finding[] {

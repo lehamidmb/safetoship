@@ -43,6 +43,40 @@ export interface EngineStatus {
   message: string;
 }
 
+export interface ScanCoverage {
+  scannedFiles: number;
+  evaluatedRules: string[];
+  excludedPaths: string[];
+  externalEngines: {
+    requested: boolean;
+    statuses: EngineStatus[];
+  };
+}
+
+export interface FindingSnapshot {
+  id: string;
+  fingerprint: string;
+  title: string;
+  severity: Severity;
+  file?: string;
+  line?: number;
+}
+
+export interface ScanDelta {
+  baseline: {
+    schemaVersion: 1 | 2;
+    source: string;
+  };
+  counts: {
+    new: number;
+    resolved: number;
+    unchanged: number;
+  };
+  newFindings: FindingSnapshot[];
+  resolvedFindings: FindingSnapshot[];
+  unchangedFingerprints: string[];
+}
+
 export interface ScanResult {
   tool: "safetoship";
   version: string;
@@ -62,6 +96,8 @@ export interface ScanResult {
   findings: Finding[];
   acceptedRisks: Finding[];
   engineStatuses: EngineStatus[];
+  coverage: ScanCoverage;
+  delta: ScanDelta | null;
   limits: string[];
   warnings: string[];
 }

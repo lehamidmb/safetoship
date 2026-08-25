@@ -2,7 +2,7 @@
 
 Vibe code with peace of mind.
 
-SafeToShip is a local pre-launch gate and Codex plugin for AI-built apps. Before you publish, it gives Codex deterministic evidence and gives you one plain-English verdict:
+SafeToShip is the deterministic launch-readiness layer for AI-built apps. Deep security agents can hunt for subtle exploit paths; SafeToShip answers the broader launch question with local evidence and one plain-English verdict:
 
 - `SHIP`
 - `SHIP-WITH-WARNINGS`
@@ -10,7 +10,9 @@ SafeToShip is a local pre-launch gate and Codex plugin for AI-built apps. Before
 
 It looks for the mistakes AI coding tools and first-time builders often miss: private API keys in the frontend, Supabase RLS gaps, `service_role` exposure, browser-only usage limits, paid API routes with no rate limit, missing CSRF/origin checks, permissive CORS, missing privacy policies, missing Terms of Use, and other launch risks.
 
-SafeToShip is not another wall of scanner output. Codex can run the audit, repair high-confidence blockers, and re-audit the result. You remain in control of commits, publishing, and deployment.
+SafeToShip is not another wall of scanner output. Codex can run the audit, repair high-confidence blockers, and create a portable launch packet that records what ran, what was skipped, and what changed. You remain in control of commits, publishing, and deployment.
+
+SafeToShip complements model-backed tools such as [Codex Security](https://openai.com/daybreak/codex-security-plugin/) and [Claude Security](https://claude.com/blog/claude-security-public-beta); it does not replace them. Those tools reason deeply about vulnerability paths. SafeToShip adds deterministic, offline checks for launch-specific failures and turns all available evidence into a release decision.
 
 ## Why This Exists
 
@@ -33,7 +35,7 @@ SafeToShip is the friend who stops you at the door and says: "This works, but do
 ### Install In Codex
 
 ```bash
-codex plugin marketplace add lehamidmb/safetoship --ref v0.2.0
+codex plugin marketplace add lehamidmb/safetoship --ref v0.3.0
 codex plugin add safetoship@safetoship
 ```
 
@@ -49,6 +51,21 @@ The plugin runs the pinned SafeToShip release, handles the findings in the curre
 
 ```bash
 npx safetoship audit
+```
+
+To create a reviewable launch packet:
+
+```bash
+npx safetoship launch
+```
+
+This writes `.safetoship/latest/report.md`, `findings.json`, `coverage.json`, and `manifest.json`. The packet uses relative paths and does not include discovered secret values.
+
+To compare a later scan with an approved baseline:
+
+```bash
+cp .safetoship/latest/findings.json .safetoship/baseline.json
+npx safetoship launch --baseline .safetoship/baseline.json
 ```
 
 For a fast beginner check:
@@ -100,13 +117,27 @@ SafeToShip assumes you are trying to launch an app and need a clear answer.
 - Applies safe hardening fixes for deterministic issues like source maps and missing policy starter docs.
 - Runs locally by default. No API key required.
 - Produces share-safe reports without machine-specific home paths or discovered secret values.
+- Records scan coverage and skipped engines instead of treating missing tools as passing checks.
+- Compares stable finding fingerprints to show new, resolved, and unchanged launch risks.
 
 The goal is simple: keep the speed of vibe coding, but add a real launch hardening pass before users, attackers, app stores, lawyers, or cloud bills get involved.
+
+## Where It Fits
+
+| Question | SafeToShip | Deep security agents |
+| --- | --- | --- |
+| Primary job | Decide whether the app is ready to launch | Find and validate subtle vulnerability paths |
+| Core runtime | Deterministic, local, offline, no API key | Model-backed security reasoning |
+| Special focus | Exposed keys, Supabase/RLS signals, runaway cost, policies, consent, launch evidence | Exploitability, threat modeling, semantic data flow, patch validation |
+| Output | One verdict plus a portable launch packet | Security findings, reproductions, and proposed fixes |
+| Failure honesty | Shows evaluated rules, skipped engines, accepted risks, and unresolved decisions | Depends on the agent workflow and configured scan |
+
+The strongest workflow is both: use Codex Security or Claude Security for deep semantic review, then use SafeToShip as the final deterministic gate. SafeToShip is an independent open-source project and is not affiliated with or endorsed by OpenAI or Anthropic.
 
 ## Example Output
 
 ```text
-SafeToShip 0.2.0  /app
+SafeToShip 0.3.0  /app
  DO-NOT-SHIP   16 finding(s): 8 blocker, 6 high, 2 medium, 0 low
 
 [BLOCKER] Paid usage limit appears enforced only in the browser [STS-COST-006]
@@ -140,6 +171,8 @@ SafeToShip 0.2.0  /app
 - Usage limits enforced only in frontend code.
 - Paid provider endpoints without obvious server-side rate limits.
 - Client flows that can lead to runaway OpenAI, Anthropic, email, SMS, or payment-provider bills.
+
+For `STS-COST-007`, comments, quoted examples, and unused imports do not count as rate-limit protection; SafeToShip looks for an implementation-shaped call in the endpoint.
 
 ### App Security Basics
 
@@ -181,6 +214,7 @@ SafeToShip intentionally does not blindly move API keys, rewrite RLS policies, o
 
 ```bash
 safetoship audit [target]
+safetoship launch [target]
 safetoship quick [target]
 safetoship fix [target]
 safetoship explain <rule-id>
@@ -191,10 +225,13 @@ Options:
 - `--json` prints structured JSON.
 - `--sarif <file>` writes SARIF for code scanning upload.
 - `--markdown <file>` writes a plain-English report.
+- `--github-comment <file>` writes a concise, verdict-first PR summary.
 - `--fail-on do-not-ship|warnings|never` controls CI failure behavior.
 - `--no-engines` skips Gitleaks, Semgrep, and OSV-Scanner wrappers.
 - `--exclude <paths>` adds comma-separated exclusions.
 - `fix --apply-safe` applies deterministic safe fixes and writes the remaining hardening plan.
+- `launch --output <directory>` chooses the packet directory; the default is `.safetoship/latest`.
+- `launch --baseline <findings.json>` reports new, resolved, and unchanged finding fingerprints.
 
 ## Confidence And Accepted Risks
 
@@ -222,7 +259,7 @@ Repository-level policy lives in `.safetoshiprc.json`:
 
 Accepted risks are excluded from verdict math but remain visible in terminal, JSON, Markdown, and PR output. Overrides can reduce severity or confidence; they cannot silently make a rule stricter or erase its audit trail.
 
-The versioned agent contract is documented in [`docs/schema/v1.json`](docs/schema/v1.json).
+The current agent contract is [`docs/schema/v2.json`](docs/schema/v2.json). The previous [`v1` schema](docs/schema/v1.json) remains available, and v0.3 baseline comparison accepts both.
 
 ## Optional Engines
 
@@ -238,6 +275,8 @@ The core Supabase, cost-abuse, and launch-compliance checks run without external
 
 ## GitHub Action
 
+The repository workflow uses `--github-comment` to create one sticky PR comment. Each run updates the same bot-authored comment with blockers and highs grouped by fix area plus the top three agent-ready repair prompts. The complete Markdown report and SARIF output remain separate and unchanged.
+
 ```yaml
 name: SafeToShip
 
@@ -251,16 +290,18 @@ jobs:
   safetoship:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: lehamidmb/safetoship@v0.2.0
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: lehamidmb/safetoship@b4157485c6717d06d99457eb6bccac7b4d829bfe # v0.2.0
         with:
           target: "."
           fail-on: do-not-ship
-      - uses: github/codeql-action/upload-sarif@v4
+      - uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         if: always()
         with:
           sarif_file: safetoship.sarif
 ```
+
+The example pins each action to a full commit SHA so a mutable tag cannot silently change the workflow. The version comments keep reviewed updates straightforward. The SafeToShip reference remains on the latest published release until v0.3.0 is released.
 
 ## Demo Fixture
 

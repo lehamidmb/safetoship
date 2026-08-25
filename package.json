@@ -1,7 +1,7 @@
 {
   "name": "safetoship",
-  "version": "0.2.0",
-  "description": "Vibe code with peace of mind: a local launch hardening agent for exposed keys, Supabase gaps, cost abuse, and launch compliance.",
+  "version": "0.3.0",
+  "description": "A deterministic launch-readiness gate for AI-built apps: exposed keys, Supabase gaps, cost abuse, policy risks, and portable launch evidence.",
   "type": "module",
   "repository": {
     "type": "git",
@@ -44,7 +44,9 @@
     "privacy-policy",
     "cost-abuse",
     "cli",
-    "github-action"
+    "github-action",
+    "codex",
+    "launch-readiness"
   ],
   "license": "Apache-2.0",
   "dependencies": {
@@ -58,7 +60,9 @@
     "vitest": "^4.1.10"
   },
   "overrides": {
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "nanoid": "3.3.18",
+    "postcss": "8.5.26"
   },
   "engines": {
     "node": ">=20"

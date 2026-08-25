@@ -22,6 +22,28 @@ export function renderMarkdown(result: ScanResult): string {
   lines.push(`- Accepted risks: ${result.summary.suppressed}`);
   lines.push("");
 
+  if (result.delta) {
+    lines.push("## Since The Baseline");
+    lines.push("");
+    lines.push(`- Baseline: \`${result.delta.baseline.source}\` (schema v${result.delta.baseline.schemaVersion})`);
+    lines.push(`- New: ${result.delta.counts.new}`);
+    lines.push(`- Resolved: ${result.delta.counts.resolved}`);
+    lines.push(`- Unchanged: ${result.delta.counts.unchanged}`);
+    lines.push("");
+  }
+
+  lines.push("## Coverage");
+  lines.push("");
+  lines.push(`- Files scanned: ${result.coverage.scannedFiles}`);
+  lines.push(`- Deterministic rules evaluated: ${result.coverage.evaluatedRules.length}`);
+  lines.push(`- External engines requested: ${result.coverage.externalEngines.requested ? "yes" : "no"}`);
+  if (result.coverage.externalEngines.statuses.length > 0) {
+    for (const status of result.coverage.externalEngines.statuses) {
+      lines.push(`- ${status.name}: ${status.status} - ${status.message}`);
+    }
+  }
+  lines.push("");
+
   if (result.findings.length > 0) {
     lines.push("## What To Fix First");
     lines.push("");

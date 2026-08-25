@@ -11,17 +11,17 @@ Use SafeToShip as the deterministic pre-launch evidence layer. Codex operates th
 
 Run this workflow when the user asks whether an app is ready to ship, says launch/deploy/publish/go-live, or adds Supabase, authentication, payments, analytics, email/SMS, or a paid AI provider.
 
-## Audit
+## Launch Audit
 
-From the target repository, run the pinned release:
+From the target repository, create the pinned release's launch packet:
 
 ```bash
-npx --yes safetoship@0.2.0 audit . --json
+npx --yes safetoship@0.3.0 launch . --fail-on never
 ```
 
 Use `--no-engines` only when optional Gitleaks, Semgrep, or OSV-Scanner availability is the reason the command cannot complete. Never describe skipped engines as passing checks.
 
-Read `schemaVersion`, `verdict`, `findings`, `acceptedRisks`, `engines`, and `limits`. Do not invent findings that are absent from the JSON.
+Read `.safetoship/latest/findings.json`, `coverage.json`, and `manifest.json`. Report `verdict`, active findings, accepted risks, delta, evaluated rules, engine status, and limits. Do not invent findings that are absent from the packet. Never describe a skipped engine as a passing check.
 
 ## Repair
 
@@ -36,7 +36,7 @@ Read `schemaVersion`, `verdict`, `findings`, `acceptedRisks`, `engines`, and `li
 For deterministic starter hardening, inspect the plan before applying it:
 
 ```bash
-npx --yes safetoship@0.2.0 fix .
+npx --yes safetoship@0.3.0 fix .
 ```
 
 Use `fix --apply-safe` only after the user approves the listed file changes.

@@ -1,7 +1,7 @@
 {
   "name": "safetoship",
-  "version": "0.2.0",
-  "description": "Audit, harden, and re-audit AI-built apps before launch.",
+  "version": "0.3.0",
+  "description": "Create deterministic launch evidence for AI-built apps and pair it with deep security reviews.",
   "author": {
     "name": "Hamid",
     "url": "https://github.com/lehamidmb"
@@ -13,15 +13,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "SafeToShip",
-    "shortDescription": "Run a pre-launch safety gate from Codex.",
-    "longDescription": "SafeToShip helps Codex audit an AI-built app, repair high-confidence launch blockers, and re-audit before the human decides to deploy.",
+    "shortDescription": "Create a deterministic pre-launch evidence packet.",
+    "longDescription": "SafeToShip helps Codex audit an AI-built app, record coverage and deltas, repair high-confidence launch blockers, and combine that evidence with an available deep security review before the human decides to deploy.",
     "developerName": "Hamid",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "websiteURL": "https://github.com/lehamidmb/safetoship",
     "defaultPrompt": [
       "Audit this app with SafeToShip before I launch it.",
-      "Use SafeToShip to harden this project and show what still needs review."
+      "Use SafeToShip to harden this project and show what still needs review.",
+      "Run a full launch review and keep SafeToShip and Codex Security evidence separate."
     ]
   }
 }
