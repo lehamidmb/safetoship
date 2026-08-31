@@ -122,6 +122,7 @@ function actionFromFinding(finding: Finding): HardeningAction {
     case "STS-TECH-002":
     case "STS-TECH-003":
     case "STS-TECH-004":
+    case "STS-TECH-005":
       return {
         id: finding.id,
         title: finding.title,
