@@ -188,6 +188,7 @@ For `STS-COST-007`, comments, quoted examples, and unused imports do not count a
 - Missing Next.js security headers.
 - Cookie/session-authenticated state-changing Next.js routes without an obvious CSRF or same-origin check.
 - State-changing Next.js routes with permissive wildcard CORS.
+- Low-confidence hints when a declared dependency name is one edit from a curated common provider package. This local similarity check is not a registry lookup or malware verdict.
 - Optional Semgrep CE wrapper for first-party code vulnerabilities.
 - Optional OSV-Scanner wrapper for known vulnerable dependencies.
 
@@ -333,7 +334,7 @@ A static repo scan cannot reliably prove:
 - every runtime CSRF, CORS, proxy, and origin enforcement path is safe.
 - Supabase RLS policies are correct, only that obvious RLS setup exists.
 - secrets in unrecognized, oversized, remote, or deployed bundles are absent; use `--build` for supported local outputs.
-- every dependency is legitimate or not typo-squatted.
+- every dependency is legitimate or not typo-squatted; the local similarity hint only identifies a narrow set of names for review.
 - your app satisfies every privacy, consumer protection, or industry-specific legal obligation.
 
 The product is honest on purpose: it catches high-signal mistakes, explains them clearly, and helps you fix them before you publish.
@@ -342,7 +343,7 @@ The product is honest on purpose: it catches high-signal mistakes, explains them
 
 - Broader build-output discovery and deployed-asset scanning beyond the opt-in local bundle check.
 - Carefully scoped Supabase exposure probes that report observed access without claiming RLS is proven safe.
-- Dependency existence and slopsquat similarity checks.
+- Registry-backed dependency existence, age, and provenance checks.
 - Optional BYOK explanation mode that never becomes required for core scans.
 
 ## License

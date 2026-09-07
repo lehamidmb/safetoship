@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { scan } from "../src/scan.js";
 import { createHardeningPlan } from "../src/hardening.js";
+import { decideVerdict } from "../src/verdict.js";
 
 describe("SafeToShip heuristics", () => {
   it.each([
@@ -332,6 +333,39 @@ describe("SafeToShip heuristics", () => {
       const result = await scan({ targetDir: root, mode: "audit", runEngines: false });
       expect(ids(result)).not.toContain("STS-TECH-003");
       expect(ids(result)).not.toContain("STS-TECH-004");
+    });
+  });
+
+  it("flags dependency names one edit from common provider packages as low-confidence hints", async () => {
+    const result = await scan({
+      targetDir: path.resolve("fixtures/dependency-name-hints"),
+      mode: "audit",
+      runEngines: false
+    });
+    const dependencyHints = result.findings.filter((finding) => finding.id === "STS-TECH-005");
+
+    expect(dependencyHints.map((finding) => finding.title)).toEqual([
+      "Dependency name closely resembles openai",
+      "Dependency name closely resembles @supabase/supabase-js"
+    ]);
+    expect(dependencyHints.every((finding) => finding.severity === "LOW" && finding.confidence === "low")).toBe(true);
+    expect(dependencyHints.every((finding) => finding.why.includes("not a malware verdict"))).toBe(true);
+    expect(decideVerdict(dependencyHints)).toBe("SHIP");
+  });
+
+  it("ignores unrelated package names and invalid manifests for dependency similarity hints", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({ dependencies: { commander: "latest", picocolors: "latest" } }));
+      const unrelated = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(unrelated)).not.toContain("STS-TECH-005");
+
+      await write(root, "package.json", "{ invalid json");
+      const invalid = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(invalid)).not.toContain("STS-TECH-005");
+
+      await write(root, "package.json", "null");
+      const nonObject = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      expect(ids(nonObject)).not.toContain("STS-TECH-005");
     });
   });
 

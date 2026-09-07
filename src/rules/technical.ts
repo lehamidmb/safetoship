@@ -12,13 +12,30 @@ const PERMISSIVE_CORS_SIGNAL =
   /["']Access-Control-Allow-Origin["']\s*[:,]\s*["']\*["']|(?:set|setHeader)\s*\(\s*["']Access-Control-Allow-Origin["']\s*,\s*["']\*["']|cors\s*\(\s*\{[\s\S]{0,300}?origin\s*:\s*(?:true|["']\*["'])/i;
 const BUILT_SECRET_LITERAL =
   /(?:sk_(?:live|test)_[A-Za-z0-9]{16,}|sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)/;
+const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"] as const;
+const COMMON_PROVIDER_PACKAGES = [
+  "@anthropic-ai/sdk",
+  "@supabase/supabase-js",
+  "@vercel/postgres",
+  "firebase-admin",
+  "jsonwebtoken",
+  "nodemailer",
+  "openai",
+  "prisma",
+  "resend",
+  "stripe",
+  "twilio"
+] as const;
+const COMMON_PROVIDER_PACKAGE_SET = new Set<string>(COMMON_PROVIDER_PACKAGES);
+const KNOWN_DISTINCT_PACKAGES = new Set(["openapi", "prism", "strip"]);
 
 export function runTechnicalRules(files: ProjectFile[]): Finding[] {
   return [
     ...findProductionSourceMaps(files),
     ...findMissingNextSecurityHeaders(files),
     ...findCookieAuthenticatedRoutesWithoutCsrf(files),
-    ...findPermissiveCorsOnStateChangingRoutes(files)
+    ...findPermissiveCorsOnStateChangingRoutes(files),
+    ...findSuspiciousDependencyNames(files)
   ];
 }
 
@@ -177,6 +194,98 @@ function findPermissiveCorsOnStateChangingRoutes(files: ProjectFile[]): Finding[
   }
 
   return findings;
+}
+
+function findSuspiciousDependencyNames(files: ProjectFile[]): Finding[] {
+  const packageFile = files.find((file) => file.relativePath === "package.json");
+  if (!packageFile) {
+    return [];
+  }
+
+  let manifest: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(packageFile.content) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return [];
+    }
+    manifest = parsed as Record<string, unknown>;
+  } catch {
+    return [];
+  }
+
+  const dependencyNames = new Set<string>();
+  for (const section of DEPENDENCY_SECTIONS) {
+    const dependencies = manifest[section];
+    if (!dependencies || typeof dependencies !== "object" || Array.isArray(dependencies)) {
+      continue;
+    }
+    for (const name of Object.keys(dependencies)) {
+      dependencyNames.add(name.toLowerCase());
+    }
+  }
+
+  const findings: Finding[] = [];
+  for (const dependencyName of [...dependencyNames].sort()) {
+    if (
+      KNOWN_DISTINCT_PACKAGES.has(dependencyName) ||
+      COMMON_PROVIDER_PACKAGE_SET.has(dependencyName)
+    ) {
+      continue;
+    }
+
+    const expectedName = COMMON_PROVIDER_PACKAGES.find((knownName) => isSingleEditAway(dependencyName, knownName));
+    if (!expectedName) {
+      continue;
+    }
+
+    const matchIndex = packageFile.content.indexOf(`"${dependencyName}"`);
+    findings.push({
+      id: "STS-TECH-005",
+      title: `Dependency name closely resembles ${expectedName}`,
+      severity: "LOW",
+      family: "technical",
+      file: packageFile.relativePath,
+      line: lineForIndex(packageFile.content, matchIndex),
+      why: `The declared dependency ${dependencyName} is one edit away from the common package ${expectedName}. This may be an intentional package, a typo, a slopsquat, or an AI-hallucinated name; similarity alone is not a malware verdict.`,
+      fixPrompt: fixPrompt(
+        `The dependency ${dependencyName} closely resembles the common package ${expectedName}.`,
+        `Before installing or deploying it, compare the intended package name with the provider's official documentation and inspect the package's registry publisher, repository, age, and provenance. If the name is a typo, replace it with ${expectedName}; if it is intentional, document the review with a reasoned SafeToShip suppression.`
+      )
+    });
+  }
+
+  return findings;
+}
+
+function isSingleEditAway(candidate: string, expected: string): boolean {
+  if (candidate === expected || Math.abs(candidate.length - expected.length) > 1) {
+    return false;
+  }
+
+  if (candidate.length === expected.length) {
+    const mismatches: number[] = [];
+    for (let index = 0; index < candidate.length; index += 1) {
+      if (candidate[index] !== expected[index]) {
+        mismatches.push(index);
+      }
+    }
+    if (mismatches.length === 1) {
+      return true;
+    }
+    return mismatches.length === 2 &&
+      mismatches[1] === mismatches[0] + 1 &&
+      candidate[mismatches[0]] === expected[mismatches[1]] &&
+      candidate[mismatches[1]] === expected[mismatches[0]];
+  }
+
+  const longer = candidate.length > expected.length ? candidate : expected;
+  const shorter = candidate.length > expected.length ? expected : candidate;
+  for (let index = 0; index < longer.length; index += 1) {
+    if (`${longer.slice(0, index)}${longer.slice(index + 1)}` === shorter) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function isNextApiRoute(relativePath: string): boolean {
