@@ -54,6 +54,7 @@ export interface ScanCoverage {
     scannedFiles: number;
     outputPaths: string[];
     skippedLargeFiles: number;
+    skippedSymlinks: number;
   };
   externalEngines: {
     requested: boolean;

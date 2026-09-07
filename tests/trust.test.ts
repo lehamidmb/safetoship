@@ -192,7 +192,8 @@ describe("SafeToShip trust contract", () => {
       command: null,
       scannedFiles: 0,
       outputPaths: [],
-      skippedLargeFiles: 0
+      skippedLargeFiles: 0,
+      skippedSymlinks: 0
     });
     expect(json.delta).toBeNull();
     expect(markdown).not.toContain(os.homedir());

@@ -49,6 +49,7 @@ program
   .option("--build", "run the package build and scan recognized generated frontend assets")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
+    validateFailOn(options.failOn);
     const result = await scan({
       targetDir: target,
       mode: "audit",
@@ -93,6 +94,7 @@ program
   .option("--build", "run the package build and scan recognized generated frontend assets")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: LaunchOptions) => {
+    validateFailOn(options.failOn);
     const targetDir = path.resolve(target);
     let result = await scan({
       targetDir,
@@ -196,10 +198,8 @@ async function writeFile(filePath: string, content: string): Promise<void> {
 }
 
 function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
+  validateFailOn(failOn);
   const normalized = failOn.toLowerCase();
-  if (!["do-not-ship", "warnings", "never"].includes(normalized)) {
-    throw new Error(`Invalid --fail-on value: ${failOn}. Use do-not-ship, warnings, or never.`);
-  }
   const shouldFail =
     normalized === "warnings"
       ? verdict === "DO-NOT-SHIP" || verdict === "SHIP-WITH-WARNINGS"
@@ -207,6 +207,12 @@ function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
 
   if (shouldFail) {
     process.exitCode = 1;
+  }
+}
+
+function validateFailOn(failOn = "do-not-ship"): void {
+  if (!["do-not-ship", "warnings", "never"].includes(failOn.toLowerCase())) {
+    throw new Error(`Invalid --fail-on value: ${failOn}. Use do-not-ship, warnings, or never.`);
   }
 }
 

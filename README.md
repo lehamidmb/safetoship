@@ -61,13 +61,17 @@ npx safetoship launch
 
 This writes `.safetoship/latest/report.md`, `findings.json`, `coverage.json`, and `manifest.json`. The packet uses relative paths and does not include discovered secret values.
 
-To explicitly run the app's package build and scan recognized generated assets:
+With the upcoming v0.3 repository source built locally, explicitly run a trusted app's package build and scan recognized generated assets:
 
 ```bash
-npx safetoship audit --build
+node dist/cli.js audit /path/to/trusted-app --build
 ```
 
-This executes the target's `scripts.build` with its declared or lockfile-selected package manager, then scans `.next/static`, `dist`, `build/static`, and `out`. Build logs are not copied into the report, and credential values are never printed.
+This executes the target's `scripts.build` (and package-manager lifecycle hooks) with its declared or lockfile-selected package manager, then scans `.next/static`, `dist`, `build/static`, and `out`. Install the app's dependencies beforehand. The build can run arbitrary project code, modify files, use inherited environment variables, and access the network; only use it on projects you trust. Core source scans never build automatically. Build stdout/stderr is discarded to keep credentials out of reports; run the build directly for diagnostic logs if it fails.
+
+`--build` currently supports macOS, Linux, and WSL. It stops the build process group after ten minutes or on interruption, and a failed build exits with code 3 without emitting a successful scan. Only supported text extensions up to 20 MB per file are scanned. Symlinks are skipped, including output-root ancestors. Coverage records skipped links and oversized files, and reports warn when no supported assets were scanned. Clean stale build output with the project's own build tooling before scanning; SafeToShip does not delete old artifacts. Explicit `--exclude` and config exclusions apply to generated assets too.
+
+`STS-TECH-006` is high confidence in conventional browser paths (`.next/static`, `dist/assets`, `build/static`, `out`); other `dist` paths produce a medium-confidence review item because they may be server-only. Accept an intentional bundled test value through a reasoned repository override; suppression-like strings inside generated files are not honored. Try the dependency-free [built-secret fixture](fixtures/built-secret/README.md) for a reproducible example. This feature is not available in npm v0.2.0.
 
 To compare a later scan with an approved baseline:
 

@@ -234,7 +234,8 @@ describe("SafeToShip heuristics", () => {
         command: "npm run build",
         scannedFiles: 1,
         outputPaths: ["dist"],
-        skippedLargeFiles: 0
+        skippedLargeFiles: 0,
+        skippedSymlinks: 0
       });
 
       const excluded = await scan({

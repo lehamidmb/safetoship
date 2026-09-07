@@ -50,6 +50,12 @@ export function renderMarkdown(result: ScanResult): string {
   }
   lines.push("");
 
+  if (result.warnings.length > 0) {
+    lines.push("## Scan Warnings", "");
+    for (const warning of result.warnings) lines.push(`- ${warning}`);
+    lines.push("");
+  }
+
   if (result.findings.length > 0) {
     lines.push("## What To Fix First");
     lines.push("");

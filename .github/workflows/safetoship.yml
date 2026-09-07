@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      - run: npm run build
+      - run: npm run check
       - run: node dist/cli.js audit . --exclude fixtures,tests --sarif safetoship.sarif --markdown safetoship-report.md --github-comment safetoship-comment.md --fail-on do-not-ship
       - uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4.37.8
         if: always()

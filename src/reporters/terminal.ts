@@ -28,7 +28,7 @@ export function renderTerminal(result: ScanResult): string {
 
   if (result.warnings.length > 0) {
     lines.push("");
-    lines.push(pc.bold("Configuration Warnings"));
+    lines.push(pc.bold("Scan Warnings"));
     for (const warning of result.warnings) lines.push(`- ${warning}`);
   }
 

@@ -44,13 +44,17 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     }
   }
 
-  const policy = applyFindingPolicy(findings, [...files, ...(buildResult?.files ?? [])], config);
+  // Bundled strings and source-map examples cannot authorize accepted risks.
+  const policy = applyFindingPolicy(findings, [...files, ...(buildResult?.files ?? [])], config, files);
   const warnings = [...configWarnings, ...policy.warnings];
   if (buildResult && buildResult.files.length === 0) {
     warnings.push("Build completed, but no supported frontend assets were found in .next/static, dist, build/static, or out.");
   }
   if (buildResult && buildResult.skippedLargeFiles > 0) {
     warnings.push(`Build scan skipped ${buildResult.skippedLargeFiles} asset(s) larger than 20 MB.`);
+  }
+  if (buildResult && buildResult.skippedSymlinks > 0) {
+    warnings.push(`Build scan skipped ${buildResult.skippedSymlinks} symbolic link(s); linked assets were not scanned.`);
   }
   const sortedFindings = sortFindings(policy.findings);
   const acceptedRisks = sortFindings(policy.acceptedRisks);
@@ -78,14 +82,16 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
         command: buildResult.command,
         scannedFiles: buildResult.files.length,
         outputPaths: buildResult.outputPaths,
-        skippedLargeFiles: buildResult.skippedLargeFiles
+        skippedLargeFiles: buildResult.skippedLargeFiles,
+        skippedSymlinks: buildResult.skippedSymlinks
       } : {
         requested: false,
         status: "not-requested",
         command: null,
         scannedFiles: 0,
         outputPaths: [],
-        skippedLargeFiles: 0
+        skippedLargeFiles: 0,
+        skippedSymlinks: 0
       },
       externalEngines: {
         requested: enginesRequested,

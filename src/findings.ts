@@ -8,14 +8,16 @@ const confidenceRank: Record<Confidence, number> = { low: 0, medium: 1, high: 2 
 export function applyFindingPolicy(
   rawFindings: Finding[],
   files: ProjectFile[],
-  config: SafeToShipConfig
+  config: SafeToShipConfig,
+  suppressionFiles: ProjectFile[] = files
 ): { findings: Finding[]; acceptedRisks: Finding[]; warnings: string[] } {
   const warnings: string[] = [];
   const findings: Finding[] = [];
   const acceptedRisks: Finding[] = [];
   const fileMap = new Map(files.map((file) => [file.relativePath, file]));
+  const suppressionFileMap = new Map(suppressionFiles.map((file) => [file.relativePath, file]));
 
-  const all = [...rawFindings, ...invalidSuppressionFindings(files)];
+  const all = [...rawFindings, ...invalidSuppressionFindings(suppressionFiles)];
   for (const raw of all) {
     const metadata = metadataFor(raw.id);
     const finding: Finding = {
@@ -50,7 +52,7 @@ export function applyFindingPolicy(
       }
     }
 
-    const inlineReason = inlineSuppressionReason(finding, fileMap);
+    const inlineReason = inlineSuppressionReason(finding, suppressionFileMap);
     const configDisabled = canApplyOverride && override?.enabled === false;
     if (inlineReason || configDisabled) {
       finding.suppressionReason = inlineReason ?? overrideReason;
