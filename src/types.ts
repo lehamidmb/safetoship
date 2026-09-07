@@ -47,6 +47,14 @@ export interface ScanCoverage {
   scannedFiles: number;
   evaluatedRules: string[];
   excludedPaths: string[];
+  build: {
+    requested: boolean;
+    status: "not-requested" | "completed" | "no-supported-output";
+    command: string | null;
+    scannedFiles: number;
+    outputPaths: string[];
+    skippedLargeFiles: number;
+  };
   externalEngines: {
     requested: boolean;
     statuses: EngineStatus[];
@@ -114,4 +122,5 @@ export interface ScanOptions {
   mode: "audit" | "quick";
   runEngines: boolean;
   excludes: string[];
+  build: boolean;
 }

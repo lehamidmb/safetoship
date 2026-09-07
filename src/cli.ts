@@ -22,6 +22,7 @@ interface CliOptions {
   failOn?: string;
   engines?: boolean;
   exclude?: string[];
+  build?: boolean;
 }
 
 interface LaunchOptions extends CliOptions {
@@ -45,13 +46,15 @@ program
   .option("--github-comment <file>", "write a concise GitHub PR comment to a file")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--build", "run the package build and scan recognized generated frontend assets")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
     const result = await scan({
       targetDir: target,
       mode: "audit",
       runEngines: options.engines !== false,
-      excludes: options.exclude ?? []
+      excludes: options.exclude ?? [],
+      build: options.build === true
     });
     await writeOutputs(result, options);
     exitForVerdict(result.verdict, options.failOn);
@@ -87,6 +90,7 @@ program
   .option("--baseline <file>", "compare against a previous SafeToShip findings.json")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--build", "run the package build and scan recognized generated frontend assets")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: LaunchOptions) => {
     const targetDir = path.resolve(target);
@@ -94,7 +98,8 @@ program
       targetDir,
       mode: "audit",
       runEngines: options.engines !== false,
-      excludes: options.exclude ?? []
+      excludes: options.exclude ?? [],
+      build: options.build === true
     });
 
     if (options.baseline) {

@@ -13,6 +13,7 @@
 - Fixed paid-endpoint rate-limit detection so TODO comments, quoted examples, and unused imports cannot hide an unprotected provider call.
 - Pinned patched transitive `nanoid` and `postcss` releases used by the test/build toolchain, resolving GHSA-2v37-7h3g-55p8 and GHSA-fxqj-rqcc-2cmp without changing production dependencies.
 - Pinned third-party GitHub Actions to reviewed commit SHAs and documented the same immutable-reference pattern for consumers.
+- Added opt-in `audit --build` and `launch --build` support that records build coverage and checks recognized generated frontend assets for credential-shaped literals without printing their values.
 
 ## 0.2.0
 

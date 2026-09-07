@@ -14,8 +14,8 @@ SafeToShip treats severity as potential impact and confidence as certainty in th
 
 | Confidence | Rules |
 | --- | --- |
-| High | `STS-COST-001`, `002`, `003`, `005`; `STS-TECH-001`, `004`; `STS-QUICK-001`, `003`; Gitleaks; OSV |
-| Medium | `STS-COST-004`, `006`, `007`; legal presence/provider/consent rules; `STS-TECH-002`, `003`; Semgrep |
+| High | `STS-COST-001`, `002`, `003`, `005`; `STS-TECH-001`, `004`, `006` for browser-served build paths; `STS-QUICK-001`, `003`; Gitleaks; OSV |
+| Medium | `STS-COST-004`, `006`, `007`; legal presence/provider/consent rules; `STS-TECH-002`, `003`; `STS-TECH-006` for ambiguous `dist` paths; Semgrep |
 | Low | Trademark/IP attestation |
 
 Confidence does not prove safety. Missing evidence can still exist outside the repository, and direct-looking evidence can be intentional. Use accepted risks only after human review.

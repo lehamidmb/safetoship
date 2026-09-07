@@ -205,6 +205,89 @@ describe("SafeToShip heuristics", () => {
     });
   });
 
+  it("runs an explicit production build and flags credential-shaped literals in generated assets", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({
+        name: "bundle-secret-demo",
+        scripts: { build: "node build.mjs" }
+      }));
+      await write(root, "build.mjs", `
+        import { mkdir, writeFile } from "node:fs/promises";
+        await mkdir("dist/assets", { recursive: true });
+        await writeFile("dist/assets/app.js", 'globalThis.providerKey="sk-proj-' + 'testfixture0123456789abcdef";');
+      `);
+
+      const withoutBuild = await scan({ targetDir: root, mode: "audit", runEngines: false });
+      const withBuild = await scan({ targetDir: root, mode: "audit", runEngines: false, build: true });
+
+      expect(ids(withoutBuild)).not.toContain("STS-TECH-006");
+      expect(withoutBuild.coverage.evaluatedRules).not.toContain("STS-TECH-006");
+      expect(ids(withBuild)).toContain("STS-TECH-006");
+      expect(withBuild.coverage.evaluatedRules).toContain("STS-TECH-006");
+      expect(withBuild.verdict).toBe("DO-NOT-SHIP");
+      expect(withBuild.findings.find((finding) => finding.id === "STS-TECH-006")?.file)
+        .toBe("dist/assets/app.js");
+      expect(withBuild.coverage.build).toEqual({
+        requested: true,
+        status: "completed",
+        command: "npm run build",
+        scannedFiles: 1,
+        outputPaths: ["dist"],
+        skippedLargeFiles: 0
+      });
+
+      const excluded = await scan({
+        targetDir: root,
+        mode: "audit",
+        runEngines: false,
+        build: true,
+        excludes: ["dist/assets"]
+      });
+      expect(ids(excluded)).not.toContain("STS-TECH-006");
+      expect(excluded.coverage.build.status).toBe("no-supported-output");
+    });
+  });
+
+  it("does not flag a generated asset without a credential-shaped literal", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({
+        name: "clean-bundle-demo",
+        scripts: { build: "node build.mjs" }
+      }));
+      await write(root, "build.mjs", `
+        import { mkdir, writeFile } from "node:fs/promises";
+        await mkdir("dist/assets", { recursive: true });
+        await writeFile("dist/assets/app.js", 'globalThis.publicKey="pk_live_public_demo";');
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false, build: true });
+
+      expect(ids(result)).not.toContain("STS-TECH-006");
+      expect(result.coverage.build.status).toBe("completed");
+    });
+  });
+
+  it("marks ambiguous dist output for review instead of claiming it is browser-served", async () => {
+    await withProject(async (root) => {
+      await write(root, "package.json", JSON.stringify({
+        name: "server-dist-demo",
+        scripts: { build: "node build.mjs" }
+      }));
+      await write(root, "build.mjs", `
+        import { mkdir, writeFile } from "node:fs/promises";
+        await mkdir("dist", { recursive: true });
+        await writeFile("dist/server.js", 'globalThis.providerKey="sk-proj-' + 'testfixture0123456789abcdef";');
+      `);
+
+      const result = await scan({ targetDir: root, mode: "audit", runEngines: false, build: true });
+      const finding = result.findings.find((item) => item.id === "STS-TECH-006");
+
+      expect(result.verdict).toBe("SHIP-WITH-WARNINGS");
+      expect(finding?.confidence).toBe("medium");
+      expect(finding?.needsReview).toBe(true);
+    });
+  });
+
   it("flags cookie-authenticated state changes without CSRF protection and permissive CORS", async () => {
     await withProject(async (root) => {
       await write(root, "package.json", JSON.stringify({ dependencies: { next: "latest" } }));

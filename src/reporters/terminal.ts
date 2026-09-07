@@ -35,6 +35,11 @@ export function renderTerminal(result: ScanResult): string {
   lines.push("");
   lines.push(pc.bold("Coverage"));
   lines.push(`- ${result.coverage.scannedFiles} file(s), ${result.coverage.evaluatedRules.length} deterministic rule(s)`);
+  if (result.coverage.build.requested) {
+    lines.push(`- Build scan: ${result.coverage.build.status} - ${result.coverage.build.scannedFiles} generated asset(s) via ${result.coverage.build.command}`);
+  } else {
+    lines.push("- Build scan: not requested");
+  }
   if (!result.coverage.externalEngines.requested) {
     lines.push("- External engines: not requested");
   }

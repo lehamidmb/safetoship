@@ -61,6 +61,14 @@ npx safetoship launch
 
 This writes `.safetoship/latest/report.md`, `findings.json`, `coverage.json`, and `manifest.json`. The packet uses relative paths and does not include discovered secret values.
 
+To explicitly run the app's package build and scan recognized generated assets:
+
+```bash
+npx safetoship audit --build
+```
+
+This executes the target's `scripts.build` with its declared or lockfile-selected package manager, then scans `.next/static`, `dist`, `build/static`, and `out`. Build logs are not copied into the report, and credential values are never printed.
+
 To compare a later scan with an approved baseline:
 
 ```bash
@@ -159,6 +167,7 @@ SafeToShip 0.3.0  /app
 - Private-looking tokens in browser-reachable code.
 - Optional Gitleaks wrapper for committed secrets.
 - Production source maps in Next.js.
+- Opt-in production builds that scan recognized generated frontend assets for credential-shaped literals.
 
 ### Supabase Safety
 
@@ -228,6 +237,7 @@ Options:
 - `--github-comment <file>` writes a concise, verdict-first PR summary.
 - `--fail-on do-not-ship|warnings|never` controls CI failure behavior.
 - `--no-engines` skips Gitleaks, Semgrep, and OSV-Scanner wrappers.
+- `--build` runs `scripts.build` and scans recognized generated assets; available for `audit` and `launch`.
 - `--exclude <paths>` adds comma-separated exclusions.
 - `fix --apply-safe` applies deterministic safe fixes and writes the remaining hardening plan.
 - `launch --output <directory>` chooses the packet directory; the default is `.safetoship/latest`.
@@ -322,7 +332,7 @@ A static repo scan cannot reliably prove:
 - BOLA/IDOR object-level authorization is safe.
 - every runtime CSRF, CORS, proxy, and origin enforcement path is safe.
 - Supabase RLS policies are correct, only that obvious RLS setup exists.
-- secrets injected only into a built frontend bundle are absent.
+- secrets in unrecognized, oversized, remote, or deployed bundles are absent; use `--build` for supported local outputs.
 - every dependency is legitimate or not typo-squatted.
 - your app satisfies every privacy, consumer protection, or industry-specific legal obligation.
 
@@ -330,7 +340,7 @@ The product is honest on purpose: it catches high-signal mistakes, explains them
 
 ## Roadmap
 
-- Build-then-scan for `.next`, `dist`, and deployed frontend bundles.
+- Broader build-output discovery and deployed-asset scanning beyond the opt-in local bundle check.
 - Carefully scoped Supabase exposure probes that report observed access without claiming RLS is proven safe.
 - Dependency existence and slopsquat similarity checks.
 - Optional BYOK explanation mode that never becomes required for core scans.
