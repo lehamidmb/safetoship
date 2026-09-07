@@ -1,0 +1,10 @@
+{
+  "name": "safetoship-dependency-name-hints-fixture",
+  "private": true,
+  "dependencies": {
+    "openaii": "0.0.0-review-only",
+    "@supabase/supabse-js": "0.0.0-review-only",
+    "openapi": "0.0.0-known-distinct-package",
+    "stripe": "0.0.0-official-name"
+  }
+}
