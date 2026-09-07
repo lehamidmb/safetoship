@@ -7,6 +7,7 @@ const DEFAULT_EXCLUDES = [
   ".safetoship",
   "node_modules",
   "dist",
+  "out",
   "build",
   ".next",
   ".turbo",

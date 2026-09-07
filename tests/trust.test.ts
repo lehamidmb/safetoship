@@ -185,6 +185,16 @@ describe("SafeToShip trust contract", () => {
     expect(json.target.path).toBe("fixtures/insecure-next-supabase");
     expect(json.coverage.scannedFiles).toBeGreaterThan(0);
     expect(json.coverage.evaluatedRules).toContain("STS-COST-001");
+    expect(json.coverage.evaluatedRules).not.toContain("STS-TECH-006");
+    expect(json.coverage.build).toEqual({
+      requested: false,
+      status: "not-requested",
+      command: null,
+      scannedFiles: 0,
+      outputPaths: [],
+      skippedLargeFiles: 0,
+      skippedSymlinks: 0
+    });
     expect(json.delta).toBeNull();
     expect(markdown).not.toContain(os.homedir());
     expect(json.findings[0].fingerprint).toMatch(/^[a-f0-9]{16}$/);

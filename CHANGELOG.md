@@ -13,6 +13,8 @@
 - Fixed paid-endpoint rate-limit detection so TODO comments, quoted examples, and unused imports cannot hide an unprotected provider call.
 - Pinned patched transitive `nanoid` and `postcss` releases used by the test/build toolchain, resolving GHSA-2v37-7h3g-55p8 and GHSA-fxqj-rqcc-2cmp without changing production dependencies.
 - Pinned third-party GitHub Actions to reviewed commit SHAs and documented the same immutable-reference pattern for consumers.
+- Added opt-in `audit --build` and `launch --build` support that records build coverage and checks recognized generated frontend assets for credential-shaped literals without printing their values.
+- Hardened the build scan to skip linked output, terminate the build process group on timeout or interruption, reject ambiguous package-manager selection, and retain warnings and repository-reviewed exceptions in reports. Added a dependency-free built-secret demo.
 - Added an offline, low-confidence dependency-name similarity hint for likely provider-package typos without treating the hint as a malware verdict or launch blocker.
 
 ## 0.2.0

@@ -36,6 +36,12 @@ export function renderMarkdown(result: ScanResult): string {
   lines.push("");
   lines.push(`- Files scanned: ${result.coverage.scannedFiles}`);
   lines.push(`- Deterministic rules evaluated: ${result.coverage.evaluatedRules.length}`);
+  lines.push(`- Build scan requested: ${result.coverage.build.requested ? "yes" : "no"}`);
+  if (result.coverage.build.requested) {
+    lines.push(`- Build scan status: ${result.coverage.build.status}`);
+    lines.push(`- Generated assets scanned: ${result.coverage.build.scannedFiles}`);
+    lines.push(`- Build command: \`${result.coverage.build.command}\``);
+  }
   lines.push(`- External engines requested: ${result.coverage.externalEngines.requested ? "yes" : "no"}`);
   if (result.coverage.externalEngines.statuses.length > 0) {
     for (const status of result.coverage.externalEngines.statuses) {
@@ -43,6 +49,12 @@ export function renderMarkdown(result: ScanResult): string {
     }
   }
   lines.push("");
+
+  if (result.warnings.length > 0) {
+    lines.push("## Scan Warnings", "");
+    for (const warning of result.warnings) lines.push(`- ${warning}`);
+    lines.push("");
+  }
 
   if (result.findings.length > 0) {
     lines.push("## What To Fix First");

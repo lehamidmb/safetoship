@@ -1,13 +1,14 @@
 import path from "node:path";
 import { loadConfig } from "./config.js";
 import { applyFindingPolicy } from "./findings.js";
+import { buildAndCollectFrontendAssets } from "./build.js";
 import { collectProjectFiles, defaultExcludes } from "./project.js";
 import { runEngines } from "./engines.js";
-import { runTechnicalRules } from "./rules/technical.js";
+import { runBuiltAssetRules, runTechnicalRules } from "./rules/technical.js";
 import { runAbuseCostRules } from "./rules/abuseCost.js";
 import { runLegalRules } from "./rules/legal.js";
 import { runQuickRules } from "./rules/quick.js";
-import { HONEST_SCOPE_LIMITS } from "./scope.js";
+import { scopeLimits } from "./scope.js";
 import { RULE_METADATA } from "./ruleMetadata.js";
 import type { EngineStatus, Finding, ScanOptions, ScanResult } from "./types.js";
 import { decideVerdict, summarize } from "./verdict.js";
@@ -16,8 +17,11 @@ export const VERSION = "0.3.0";
 
 export async function scan(options: Partial<ScanOptions> & { targetDir: string; mode: "audit" | "quick" }): Promise<ScanResult> {
   const targetDir = path.resolve(options.targetDir);
+  const buildRequested = options.mode === "audit" && options.build === true;
   const { config, warnings: configWarnings } = await loadConfig(targetDir);
-  const excludes = [...defaultExcludes(), ...config.exclude, ...(options.excludes ?? [])];
+  const requestedExcludes = [...config.exclude, ...(options.excludes ?? [])];
+  const buildResult = buildRequested ? await buildAndCollectFrontendAssets(targetDir, requestedExcludes) : null;
+  const excludes = [...defaultExcludes(), ...requestedExcludes];
   const files = await collectProjectFiles(targetDir, excludes);
   const engineStatuses: EngineStatus[] = [];
   const findings: Finding[] = [];
@@ -29,6 +33,9 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     findings.push(...runAbuseCostRules(files));
     findings.push(...runLegalRules(files));
     findings.push(...runTechnicalRules(files));
+    if (buildResult) {
+      findings.push(...runBuiltAssetRules(buildResult.files));
+    }
 
     if (enginesRequested) {
       const engineResult = runEngines(targetDir);
@@ -37,7 +44,18 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     }
   }
 
-  const policy = applyFindingPolicy(findings, files, config);
+  // Bundled strings and source-map examples cannot authorize accepted risks.
+  const policy = applyFindingPolicy(findings, [...files, ...(buildResult?.files ?? [])], config, files);
+  const warnings = [...configWarnings, ...policy.warnings];
+  if (buildResult && buildResult.files.length === 0) {
+    warnings.push("Build completed, but no supported frontend assets were found in .next/static, dist, build/static, or out.");
+  }
+  if (buildResult && buildResult.skippedLargeFiles > 0) {
+    warnings.push(`Build scan skipped ${buildResult.skippedLargeFiles} asset(s) larger than 20 MB.`);
+  }
+  if (buildResult && buildResult.skippedSymlinks > 0) {
+    warnings.push(`Build scan skipped ${buildResult.skippedSymlinks} symbolic link(s); linked assets were not scanned.`);
+  }
   const sortedFindings = sortFindings(policy.findings);
   const acceptedRisks = sortFindings(policy.acceptedRisks);
   const summary = summarize(sortedFindings);
@@ -56,22 +74,42 @@ export async function scan(options: Partial<ScanOptions> & { targetDir: string; 
     engineStatuses,
     coverage: {
       scannedFiles: files.length,
-      evaluatedRules: evaluatedRuleIds(options.mode),
+      evaluatedRules: evaluatedRuleIds(options.mode, buildRequested),
       excludedPaths: [...new Set(excludes)].sort(),
+      build: buildResult ? {
+        requested: true,
+        status: buildResult.files.length > 0 ? "completed" : "no-supported-output",
+        command: buildResult.command,
+        scannedFiles: buildResult.files.length,
+        outputPaths: buildResult.outputPaths,
+        skippedLargeFiles: buildResult.skippedLargeFiles,
+        skippedSymlinks: buildResult.skippedSymlinks
+      } : {
+        requested: false,
+        status: "not-requested",
+        command: null,
+        scannedFiles: 0,
+        outputPaths: [],
+        skippedLargeFiles: 0,
+        skippedSymlinks: 0
+      },
       externalEngines: {
         requested: enginesRequested,
         statuses: engineStatuses
       }
     },
     delta: null,
-    limits: HONEST_SCOPE_LIMITS,
-    warnings: [...new Set([...configWarnings, ...policy.warnings])]
+    limits: scopeLimits(buildRequested),
+    warnings: [...new Set(warnings)]
   };
 }
 
-function evaluatedRuleIds(mode: "audit" | "quick"): string[] {
+function evaluatedRuleIds(mode: "audit" | "quick", buildRequested: boolean): string[] {
   const prefixes = mode === "quick" ? ["STS-QUICK-", "STS-META-"] : ["STS-COST-", "STS-LEGAL-", "STS-TECH-", "STS-META-"];
-  return [...RULE_METADATA.keys()].filter((id) => prefixes.some((prefix) => id.startsWith(prefix))).sort();
+  return [...RULE_METADATA.keys()]
+    .filter((id) => prefixes.some((prefix) => id.startsWith(prefix)))
+    .filter((id) => buildRequested || id !== "STS-TECH-006")
+    .sort();
 }
 
 function sortFindings(findings: Finding[]): Finding[] {

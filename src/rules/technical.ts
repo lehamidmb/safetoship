@@ -10,6 +10,8 @@ const CSRF_ORIGIN_PROTECTION_SIGNAL =
   /\b(?:csrf|xsrf|same[-_ ]?origin|verifyOrigin|validateOrigin|allowedOrigins?|trustedOrigins?)\b|origin\s*(?:===|!==)|(?:includes|has)\s*\(\s*origin\b/i;
 const PERMISSIVE_CORS_SIGNAL =
   /["']Access-Control-Allow-Origin["']\s*[:,]\s*["']\*["']|(?:set|setHeader)\s*\(\s*["']Access-Control-Allow-Origin["']\s*,\s*["']\*["']|cors\s*\(\s*\{[\s\S]{0,300}?origin\s*:\s*(?:true|["']\*["'])/i;
+const BUILT_SECRET_LITERAL =
+  /(?:sk_(?:live|test)_[A-Za-z0-9]{16,}|sk-(?:proj-|svcacct-)?[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9_]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)/;
 const DEPENDENCY_SECTIONS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"] as const;
 const COMMON_PROVIDER_PACKAGES = [
   "@anthropic-ai/sdk",
@@ -35,6 +37,35 @@ export function runTechnicalRules(files: ProjectFile[]): Finding[] {
     ...findPermissiveCorsOnStateChangingRoutes(files),
     ...findSuspiciousDependencyNames(files)
   ];
+}
+
+export function runBuiltAssetRules(files: ProjectFile[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const file of files) {
+    const match = BUILT_SECRET_LITERAL.exec(file.content);
+    if (!match) continue;
+    const clearlyBrowserServed = /^(?:\.next\/static\/|build\/static\/|out\/|dist\/assets\/)/.test(file.relativePath);
+    findings.push({
+      id: "STS-TECH-006",
+      title: "Generated frontend asset contains a credential-shaped literal",
+      severity: "BLOCKER",
+      family: "technical",
+      file: file.relativePath,
+      line: lineForIndex(file.content, match.index),
+      confidence: clearlyBrowserServed ? "high" : "medium",
+      confidenceRationale: clearlyBrowserServed
+        ? "A credential-shaped literal appears directly in a conventional browser-served build path."
+        : "The dist output contains a credential-shaped literal, but SafeToShip cannot prove this particular file is browser-served.",
+      why: clearlyBrowserServed
+        ? "A credential-shaped literal is present in a conventional browser-served build path. SafeToShip does not print the value, but a browser user may be able to recover it from the bundle."
+        : "A credential-shaped literal is present in dist output that may be deployed. SafeToShip does not print the value; confirm whether this file is browser-served or restricted to a trusted server runtime.",
+      fixPrompt: fixPrompt(
+        "A generated frontend asset contains a credential-shaped literal.",
+        "Remove the credential from public build-time variables and client code, move privileged provider calls behind a protected server endpoint, rotate the credential if it was real, delete stale build output, rebuild, and rerun SafeToShip with --build."
+      )
+    });
+  }
+  return findings;
 }
 
 function findProductionSourceMaps(files: ProjectFile[]): Finding[] {

@@ -106,6 +106,20 @@
         "scannedFiles": { "type": "integer", "minimum": 0 },
         "evaluatedRules": { "type": "array", "items": { "type": "string", "pattern": "^STS-" }, "uniqueItems": true },
         "excludedPaths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "build": {
+          "type": "object",
+          "required": ["requested", "status", "command", "scannedFiles", "outputPaths", "skippedLargeFiles", "skippedSymlinks"],
+          "properties": {
+            "requested": { "type": "boolean" },
+            "status": { "enum": ["not-requested", "completed", "no-supported-output"] },
+            "command": { "type": ["string", "null"] },
+            "scannedFiles": { "type": "integer", "minimum": 0 },
+            "outputPaths": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+            "skippedLargeFiles": { "type": "integer", "minimum": 0 },
+            "skippedSymlinks": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        },
         "externalEngines": {
           "type": "object",
           "required": ["requested", "statuses"],

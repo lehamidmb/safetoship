@@ -22,6 +22,7 @@ interface CliOptions {
   failOn?: string;
   engines?: boolean;
   exclude?: string[];
+  build?: boolean;
 }
 
 interface LaunchOptions extends CliOptions {
@@ -45,13 +46,16 @@ program
   .option("--github-comment <file>", "write a concise GitHub PR comment to a file")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--build", "run the package build and scan recognized generated frontend assets")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: CliOptions) => {
+    validateFailOn(options.failOn);
     const result = await scan({
       targetDir: target,
       mode: "audit",
       runEngines: options.engines !== false,
-      excludes: options.exclude ?? []
+      excludes: options.exclude ?? [],
+      build: options.build === true
     });
     await writeOutputs(result, options);
     exitForVerdict(result.verdict, options.failOn);
@@ -87,14 +91,17 @@ program
   .option("--baseline <file>", "compare against a previous SafeToShip findings.json")
   .option("--fail-on <level>", "exit non-zero on do-not-ship, warnings, or never", "do-not-ship")
   .option("--no-engines", "skip optional gitleaks, semgrep, and osv-scanner wrappers")
+  .option("--build", "run the package build and scan recognized generated frontend assets")
   .option("--exclude <patterns>", "comma-separated paths to exclude in addition to defaults", splitCsv, [])
   .action(async (target: string, options: LaunchOptions) => {
+    validateFailOn(options.failOn);
     const targetDir = path.resolve(target);
     let result = await scan({
       targetDir,
       mode: "audit",
       runEngines: options.engines !== false,
-      excludes: options.exclude ?? []
+      excludes: options.exclude ?? [],
+      build: options.build === true
     });
 
     if (options.baseline) {
@@ -191,10 +198,8 @@ async function writeFile(filePath: string, content: string): Promise<void> {
 }
 
 function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
+  validateFailOn(failOn);
   const normalized = failOn.toLowerCase();
-  if (!["do-not-ship", "warnings", "never"].includes(normalized)) {
-    throw new Error(`Invalid --fail-on value: ${failOn}. Use do-not-ship, warnings, or never.`);
-  }
   const shouldFail =
     normalized === "warnings"
       ? verdict === "DO-NOT-SHIP" || verdict === "SHIP-WITH-WARNINGS"
@@ -202,6 +207,12 @@ function exitForVerdict(verdict: Verdict, failOn = "do-not-ship"): void {
 
   if (shouldFail) {
     process.exitCode = 1;
+  }
+}
+
+function validateFailOn(failOn = "do-not-ship"): void {
+  if (!["do-not-ship", "warnings", "never"].includes(failOn.toLowerCase())) {
+    throw new Error(`Invalid --fail-on value: ${failOn}. Use do-not-ship, warnings, or never.`);
   }
 }
 

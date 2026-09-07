@@ -61,6 +61,18 @@ npx safetoship launch
 
 This writes `.safetoship/latest/report.md`, `findings.json`, `coverage.json`, and `manifest.json`. The packet uses relative paths and does not include discovered secret values.
 
+With the upcoming v0.3 repository source built locally, explicitly run a trusted app's package build and scan recognized generated assets:
+
+```bash
+node dist/cli.js audit /path/to/trusted-app --build
+```
+
+This executes the target's `scripts.build` (and package-manager lifecycle hooks) with its declared or lockfile-selected package manager, then scans `.next/static`, `dist`, `build/static`, and `out`. Install the app's dependencies beforehand. The build can run arbitrary project code, modify files, use inherited environment variables, and access the network; only use it on projects you trust. Core source scans never build automatically. Build stdout/stderr is discarded to keep credentials out of reports; run the build directly for diagnostic logs if it fails.
+
+`--build` currently supports macOS, Linux, and WSL. It stops the build process group after ten minutes or on interruption, and a failed build exits with code 3 without emitting a successful scan. Only supported text extensions up to 20 MB per file are scanned. Symlinks are skipped, including output-root ancestors. Coverage records skipped links and oversized files, and reports warn when no supported assets were scanned. Clean stale build output with the project's own build tooling before scanning; SafeToShip does not delete old artifacts. Explicit `--exclude` and config exclusions apply to generated assets too.
+
+`STS-TECH-006` is high confidence in conventional browser paths (`.next/static`, `dist/assets`, `build/static`, `out`); other `dist` paths produce a medium-confidence review item because they may be server-only. Accept an intentional bundled test value through a reasoned repository override; suppression-like strings inside generated files are not honored. Try the dependency-free [built-secret fixture](fixtures/built-secret/README.md) for a reproducible example. This feature is not available in npm v0.2.0.
+
 To compare a later scan with an approved baseline:
 
 ```bash
@@ -159,6 +171,7 @@ SafeToShip 0.3.0  /app
 - Private-looking tokens in browser-reachable code.
 - Optional Gitleaks wrapper for committed secrets.
 - Production source maps in Next.js.
+- Opt-in production builds that scan recognized generated frontend assets for credential-shaped literals.
 
 ### Supabase Safety
 
@@ -229,6 +242,7 @@ Options:
 - `--github-comment <file>` writes a concise, verdict-first PR summary.
 - `--fail-on do-not-ship|warnings|never` controls CI failure behavior.
 - `--no-engines` skips Gitleaks, Semgrep, and OSV-Scanner wrappers.
+- `--build` runs `scripts.build` and scans recognized generated assets; available for `audit` and `launch`.
 - `--exclude <paths>` adds comma-separated exclusions.
 - `fix --apply-safe` applies deterministic safe fixes and writes the remaining hardening plan.
 - `launch --output <directory>` chooses the packet directory; the default is `.safetoship/latest`.
@@ -323,7 +337,7 @@ A static repo scan cannot reliably prove:
 - BOLA/IDOR object-level authorization is safe.
 - every runtime CSRF, CORS, proxy, and origin enforcement path is safe.
 - Supabase RLS policies are correct, only that obvious RLS setup exists.
-- secrets injected only into a built frontend bundle are absent.
+- secrets in unrecognized, oversized, remote, or deployed bundles are absent; use `--build` for supported local outputs.
 - every dependency is legitimate or not typo-squatted; the local similarity hint only identifies a narrow set of names for review.
 - your app satisfies every privacy, consumer protection, or industry-specific legal obligation.
 
@@ -331,7 +345,7 @@ The product is honest on purpose: it catches high-signal mistakes, explains them
 
 ## Roadmap
 
-- Build-then-scan for `.next`, `dist`, and deployed frontend bundles.
+- Broader build-output discovery and deployed-asset scanning beyond the opt-in local bundle check.
 - Carefully scoped Supabase exposure probes that report observed access without claiming RLS is proven safe.
 - Registry-backed dependency existence, age, and provenance checks.
 - Optional BYOK explanation mode that never becomes required for core scans.
