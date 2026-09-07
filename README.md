@@ -61,17 +61,17 @@ npx safetoship launch
 
 This writes `.safetoship/latest/report.md`, `findings.json`, `coverage.json`, and `manifest.json`. The packet uses relative paths and does not include discovered secret values.
 
-With the upcoming v0.3 repository source built locally, explicitly run a trusted app's package build and scan recognized generated assets:
+With SafeToShip v0.3.0, explicitly run a trusted app's package build and scan recognized generated assets:
 
 ```bash
-node dist/cli.js audit /path/to/trusted-app --build
+npx safetoship@0.3.0 audit /path/to/trusted-app --build
 ```
 
 This executes the target's `scripts.build` (and package-manager lifecycle hooks) with its declared or lockfile-selected package manager, then scans `.next/static`, `dist`, `build/static`, and `out`. Install the app's dependencies beforehand. The build can run arbitrary project code, modify files, use inherited environment variables, and access the network; only use it on projects you trust. Core source scans never build automatically. Build stdout/stderr is discarded to keep credentials out of reports; run the build directly for diagnostic logs if it fails.
 
 `--build` currently supports macOS, Linux, and WSL. It stops the build process group after ten minutes or on interruption, and a failed build exits with code 3 without emitting a successful scan. Only supported text extensions up to 20 MB per file are scanned. Symlinks are skipped, including output-root ancestors. Coverage records skipped links and oversized files, and reports warn when no supported assets were scanned. Clean stale build output with the project's own build tooling before scanning; SafeToShip does not delete old artifacts. Explicit `--exclude` and config exclusions apply to generated assets too.
 
-`STS-TECH-006` is high confidence in conventional browser paths (`.next/static`, `dist/assets`, `build/static`, `out`); other `dist` paths produce a medium-confidence review item because they may be server-only. Accept an intentional bundled test value through a reasoned repository override; suppression-like strings inside generated files are not honored. Try the dependency-free [built-secret fixture](fixtures/built-secret/README.md) for a reproducible example. This feature is not available in npm v0.2.0.
+`STS-TECH-006` is high confidence in conventional browser paths (`.next/static`, `dist/assets`, `build/static`, `out`); other `dist` paths produce a medium-confidence review item because they may be server-only. Accept an intentional bundled test value through a reasoned repository override; suppression-like strings inside generated files are not honored. Try the dependency-free [built-secret fixture](fixtures/built-secret/README.md) for a reproducible example.
 
 To compare a later scan with an approved baseline:
 
@@ -306,7 +306,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: lehamidmb/safetoship@b4157485c6717d06d99457eb6bccac7b4d829bfe # v0.2.0
+      - uses: lehamidmb/safetoship@9333e5520f57540658144f94ef8557ae564b8d50 # v0.3.0 action
         with:
           target: "."
           fail-on: do-not-ship
@@ -316,7 +316,7 @@ jobs:
           sarif_file: safetoship.sarif
 ```
 
-The example pins each action to a full commit SHA so a mutable tag cannot silently change the workflow. The version comments keep reviewed updates straightforward. The SafeToShip reference remains on the latest published release until v0.3.0 is released.
+The example pins each action to a full commit SHA so a mutable tag cannot silently change the workflow. The version comments keep reviewed updates straightforward. The SafeToShip reference pins the reviewed v0.3.0 action implementation.
 
 ## Demo Fixture
 
