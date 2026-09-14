@@ -171,6 +171,15 @@ describe("SafeToShip trust contract", () => {
     }
   });
 
+  it("keeps the test runner above the patched path-traversal floor", async () => {
+    const packageJson = JSON.parse(await readFile(path.resolve("package.json"), "utf8"));
+    const packageLock = JSON.parse(await readFile(path.resolve("package-lock.json"), "utf8"));
+
+    expect(packageJson.devDependencies.vitest).toBe("^4.1.11");
+    expect(packageLock.packages["node_modules/vitest"].version).toBe("4.1.11");
+    expect(packageLock.packages["node_modules/@vitest/mocker"].version).toBe("4.1.11");
+  });
+
   it("publishes versioned JSON and concise Markdown contracts", async () => {
     const result = await scan({
       targetDir: path.resolve("fixtures/insecure-next-supabase"),
