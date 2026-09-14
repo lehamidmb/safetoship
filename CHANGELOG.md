@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Updated Vitest and its mocker to 4.1.11, resolving the development-only path-traversal advisory GHSA-82fw-gwwq-j7x9, and added a regression guard against restoring the vulnerable versions.
+
 ## 0.3.0
 
 - Added `safetoship launch`, which writes a portable report, findings contract, coverage record, and manifest to `.safetoship/latest`.
