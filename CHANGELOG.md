@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Tightened paid-endpoint rate-limit detection so unused helper declarations and constructed-but-never-invoked limiters no longer hide an unprotected route.
+
 ## 0.3.0
 
 - Added `safetoship launch`, which writes a portable report, findings contract, coverage record, and manifest to `.safetoship/latest`.

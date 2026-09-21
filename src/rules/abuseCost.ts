@@ -13,7 +13,7 @@ const SECRETISH_PUBLIC_ENV =
 const DIRECT_SECRET_VALUE = /(sk_live_[A-Za-z0-9_-]+|sk-[A-Za-z0-9_-]{8,}|service_role|SUPABASE_SERVICE_ROLE|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)/i;
 const PAID_API_SIGNAL = /(openai|@anthropic-ai|anthropic|stripe|resend|sendgrid|twilio|mailgun|postmark|elevenlabs|replicate)/i;
 const RATE_LIMIT_CALL_SIGNAL =
-  /\b(?:rateLimit|ratelimit|rateLimiter|limiter|throttle|slowDown)\s*(?:\(|\.)|\bnew\s+(?:Ratelimit|RateLimiter\w*)\s*\(/i;
+  /\b(?:rateLimit|ratelimit|rateLimiter|limiter|throttle|slowDown)\s*(?:\(|\.)/gi;
 
 export function runAbuseCostRules(files: ProjectFile[]): Finding[] {
   return collapseOverlappingSecretFindings([
@@ -216,7 +216,15 @@ export function findPaidEndpointsWithoutRateLimits(files: ProjectFile[]): Findin
 }
 
 function hasRateLimitImplementation(content: string): boolean {
-  return RATE_LIMIT_CALL_SIGNAL.test(maskJavaScript(content));
+  const masked = maskJavaScript(content);
+  for (const match of masked.matchAll(RATE_LIMIT_CALL_SIGNAL)) {
+    const prefix = masked.slice(0, match.index);
+    if (/\b(?:function|new)\s*$/i.test(prefix)) {
+      continue;
+    }
+    return true;
+  }
+  return false;
 }
 
 function maskJavaScript(content: string): string {
