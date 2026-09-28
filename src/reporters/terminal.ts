@@ -61,7 +61,7 @@ export function renderTerminal(result: ScanResult): string {
     lines.push(pc.bold(`Accepted Risks (${result.acceptedRisks.length})`));
     for (const finding of result.acceptedRisks) {
       const location = finding.file ? `${finding.file}${finding.line ? `:${finding.line}` : ""}` : "project";
-      lines.push(`- ${finding.id} at ${location}: ${finding.suppressionReason}`);
+      lines.push(`- ${finding.id} (${finding.fingerprint}) at ${location}: ${finding.suppressionReason}`);
     }
   }
 
@@ -79,6 +79,7 @@ function renderFinding(finding: Finding): string {
   return [
     `\n${severityLabel(finding.severity)} ${pc.bold(finding.title)} ${pc.dim(`[${finding.id}]`)}`,
     `  Confidence: ${finding.confidence ?? "medium"}${finding.needsReview ? " - NEEDS REVIEW" : ""}`,
+    `  Fingerprint: ${finding.fingerprint}`,
     `  ${pc.dim(location)}`,
     `  Why: ${finding.why}`,
     indent(finding.fixPrompt, "  ")

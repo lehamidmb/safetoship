@@ -263,6 +263,9 @@ Repository-level policy lives in `.safetoshiprc.json`:
 ```json
 {
   "exclude": ["examples"],
+  "acceptedRisks": {
+    "0123456789abcdef": "reviewed inert fixture value"
+  },
   "rules": {
     "STS-COST-006": {
       "enabled": false,
@@ -272,7 +275,7 @@ Repository-level policy lives in `.safetoshiprc.json`:
 }
 ```
 
-Accepted risks are excluded from verdict math but remain visible in terminal, JSON, Markdown, and PR output. Overrides can reduce severity or confidence; they cannot silently make a rule stricter or erase its audit trail.
+Use `acceptedRisks` with the fingerprint shown in terminal, JSON, or Markdown when one exact finding has been reviewed. A fingerprint that does not match the current scan produces a warning, so stale or mistyped exceptions stay visible. Rule-level `enabled: false` remains available for an intentional whole-rule policy. Accepted risks are excluded from verdict math but remain visible in terminal, JSON, Markdown, and PR output. Overrides can reduce severity or confidence; they cannot silently make a rule stricter or erase its audit trail.
 
 The current agent contract is [`docs/schema/v2.json`](docs/schema/v2.json). The previous [`v1` schema](docs/schema/v1.json) remains available, and v0.3 baseline comparison accepts both.
 

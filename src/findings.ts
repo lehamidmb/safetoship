@@ -16,6 +16,7 @@ export function applyFindingPolicy(
   const acceptedRisks: Finding[] = [];
   const fileMap = new Map(files.map((file) => [file.relativePath, file]));
   const suppressionFileMap = new Map(suppressionFiles.map((file) => [file.relativePath, file]));
+  const matchedAcceptedRiskFingerprints = new Set<string>();
 
   const all = [...rawFindings, ...invalidSuppressionFindings(suppressionFiles)];
   for (const raw of all) {
@@ -53,15 +54,27 @@ export function applyFindingPolicy(
     }
 
     const inlineReason = inlineSuppressionReason(finding, suppressionFileMap);
+    const fingerprintReason = finding.fingerprint
+      ? config.acceptedRisks[finding.fingerprint]
+      : undefined;
+    if (fingerprintReason && finding.fingerprint) {
+      matchedAcceptedRiskFingerprints.add(finding.fingerprint);
+    }
     const configDisabled = canApplyOverride && override?.enabled === false;
-    if (inlineReason || configDisabled) {
-      finding.suppressionReason = inlineReason ?? overrideReason;
+    if (inlineReason || fingerprintReason || configDisabled) {
+      finding.suppressionReason = inlineReason ?? fingerprintReason ?? overrideReason;
       acceptedRisks.push(finding);
       continue;
     }
 
     finding.needsReview = finding.confidence === "medium" && finding.severity === "BLOCKER";
     findings.push(finding);
+  }
+
+  for (const fingerprint of Object.keys(config.acceptedRisks)) {
+    if (!matchedAcceptedRiskFingerprints.has(fingerprint)) {
+      warnings.push(`Accepted-risk fingerprint ${fingerprint} did not match a finding in this scan.`);
+    }
   }
 
   return { findings, acceptedRisks, warnings };

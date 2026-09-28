@@ -79,7 +79,8 @@ program
       `Known false positives: ${metadata.knownFalsePositives}`,
       "",
       `Inline suppression: // safetoship-ignore ${metadata.id} reason=\"explain the accepted risk here\"`,
-      `Repository config: {\"rules\":{\"${metadata.id}\":{\"enabled\":false,\"reason\":\"explain the accepted risk here\"}}}`
+      `Finding-scoped config: {\"acceptedRisks\":{\"<finding-fingerprint>\":\"explain the accepted risk here\"}}`,
+      `Whole-rule config: {\"rules\":{\"${metadata.id}\":{\"enabled\":false,\"reason\":\"explain the accepted risk here\"}}}`
     ].join("\n") + "\n");
   });
 

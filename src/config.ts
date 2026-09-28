@@ -4,6 +4,7 @@ import { RULE_METADATA } from "./ruleMetadata.js";
 import type { Confidence, RuleOverride, SafeToShipConfig, Severity } from "./types.js";
 
 const CONFIG_FILE = ".safetoshiprc.json";
+const FINDING_FINGERPRINT = /^[a-f0-9]{16}$/;
 const severities = new Set<Severity>(["LOW", "MEDIUM", "HIGH", "BLOCKER"]);
 const confidences = new Set<Confidence>(["low", "medium", "high"]);
 
@@ -70,10 +71,34 @@ export async function loadConfig(targetDir: string): Promise<{ config: SafeToShi
     rules[normalizedId] = override;
   }
 
+  const acceptedRisks: Record<string, string> = {};
+  if (parsed.acceptedRisks !== undefined && !isObject(parsed.acceptedRisks)) {
+    throw new Error(`${CONFIG_FILE}: acceptedRisks must be an object keyed by finding fingerprint.`);
+  }
+
+  for (const [fingerprint, value] of Object.entries(
+    (parsed.acceptedRisks as Record<string, unknown> | undefined) ?? {}
+  )) {
+    const normalizedFingerprint = fingerprint.toLowerCase();
+    if (!FINDING_FINGERPRINT.test(normalizedFingerprint)) {
+      warnings.push(`${CONFIG_FILE}: ignored invalid accepted-risk fingerprint ${fingerprint}.`);
+      continue;
+    }
+    const reason = typeof value === "string" ? value.trim() : "";
+    if (reason.length < 10) {
+      warnings.push(
+        `${CONFIG_FILE}: ignored accepted risk ${fingerprint}; add a reason of at least 10 characters.`
+      );
+      continue;
+    }
+    acceptedRisks[normalizedFingerprint] = reason;
+  }
+
   return {
     config: {
       exclude,
       rules,
+      acceptedRisks,
       deployGate: parsed.deployGate === true
     },
     warnings
@@ -81,7 +106,7 @@ export async function loadConfig(targetDir: string): Promise<{ config: SafeToShi
 }
 
 function emptyConfig(): SafeToShipConfig {
-  return { exclude: [], rules: {} };
+  return { exclude: [], rules: {}, acceptedRisks: {} };
 }
 
 function isObject(value: unknown): value is Record<string, any> {

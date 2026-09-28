@@ -73,6 +73,7 @@ export function renderMarkdown(result: ScanResult): string {
       lines.push(`### ${finding.severity}: ${finding.title}`);
       lines.push("");
       lines.push(`- Rule: \`${finding.id}\``);
+      lines.push(`- Fingerprint: \`${finding.fingerprint}\``);
       lines.push(`- Confidence: ${finding.confidence ?? "medium"}${finding.needsReview ? " (needs review)" : ""}`);
       lines.push(`- Location: \`${location}\``);
       lines.push(`- Why: ${finding.why}`);
@@ -90,7 +91,7 @@ export function renderMarkdown(result: ScanResult): string {
     lines.push(`## Accepted Risks (${result.acceptedRisks.length})`);
     lines.push("");
     for (const finding of result.acceptedRisks) {
-      lines.push(`- \`${finding.id}\`: ${finding.suppressionReason}`);
+      lines.push(`- \`${finding.id}\` / \`${finding.fingerprint}\`: ${finding.suppressionReason}`);
     }
     lines.push("");
   }
