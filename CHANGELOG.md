@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Added fingerprint-scoped repository accepted risks so one reviewed exception does not hide new findings from the same rule; invalid and unmatched fingerprints produce visible warnings.
+
 ## 0.3.0
 
 - Added `safetoship launch`, which writes a portable report, findings contract, coverage record, and manifest to `.safetoship/latest`.

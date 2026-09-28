@@ -30,6 +30,7 @@ Read `.safetoship/latest/findings.json`, `coverage.json`, and `manifest.json`. R
 3. Make the smallest safe code change that addresses the evidence and fix prompt.
 4. Show the diff before any consequential action.
 5. Do not silently suppress findings. A suppression requires the user's stated reason and remains visible as an accepted risk.
+   Prefer `.safetoshiprc.json` `acceptedRisks[fingerprint]` for one reviewed finding. Use a rule-level `enabled: false` only when the approval intentionally covers every finding from that rule.
 6. Treat legal findings as risk signals and repeat the not-legal-advice limitation.
 7. A committed secret is not fixed by moving it. Tell the user to rotate it with the provider and avoid printing the value.
 

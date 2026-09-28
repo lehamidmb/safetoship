@@ -34,6 +34,7 @@ export interface RuleOverride {
 export interface SafeToShipConfig {
   exclude: string[];
   rules: Record<string, RuleOverride>;
+  acceptedRisks: Record<string, string>;
   deployGate?: boolean;
 }
 
